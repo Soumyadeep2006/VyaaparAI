@@ -23,6 +23,7 @@ app.add_middleware(
     CORSMiddleware,
     allow_origins=[
         "http://localhost:5173",
+        "https://vyapar-ihjapjjt5-mrking7979s-projects.vercel.app",
     ],
     allow_credentials=True,
     allow_methods=["*"],
