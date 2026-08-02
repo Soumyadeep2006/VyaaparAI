@@ -15,8 +15,9 @@ import ReportsPage from "./pages/reports/ReportsPage";
 import AIPage from "./pages/ai/AIPage";
 import LoginPage from "./pages/auth/LoginPage";
 import RegisterPage from "./pages/auth/RegisterPage";
+import ForgotPasswordPage from "./pages/auth/ForgotPasswordPage";
 import ProtectedRoute from "./components/auth/ProtectedRoute";
-
+import ResetPasswordPage from "./pages/auth/ResetPasswordPage";
 import SettingsPage from "./pages/settings/SettingsPage";
 function Protected({
   children,
@@ -43,6 +44,15 @@ export default function App() {
         path="/register"
         element={<RegisterPage />}
       />
+      <Route
+        path="/forgot-password"
+        element={<ForgotPasswordPage />}
+      />
+      <Route
+        path="/reset-password"
+        element={<ResetPasswordPage />}
+      />
+      
       {/* Default */}
       <Route
         path="/"

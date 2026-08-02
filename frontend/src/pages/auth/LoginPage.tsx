@@ -20,34 +20,30 @@ export default function LoginPage() {
   const navigate = useNavigate();
   const { login } = useAuth();
 
-  const [mode, setMode] =
-    useState<LoginMode>("email");
+  const [mode, setMode] = useState<LoginMode>("email");
 
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
 
   const [phone, setPhone] = useState("");
   const [otp, setOtp] = useState("");
-
   const [otpSent, setOtpSent] = useState(false);
 
-  const [showPassword, setShowPassword] =
-    useState(false);
-
+  const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
   const handleEmailLogin = async (
-    event: React.FormEvent
+    event: React.FormEvent<HTMLFormElement>
   ) => {
     event.preventDefault();
 
     setError("");
 
-    if (!email || !password) {
-      setError(
-        "Please enter your email and password."
-      );
+    const cleanEmail = email.trim().toLowerCase();
+
+    if (!cleanEmail || !password) {
+      setError("Please enter your email and password.");
       return;
     }
 
@@ -55,24 +51,33 @@ export default function LoginPage() {
       setLoading(true);
 
       const response = await loginUser({
-        email,
+        email: cleanEmail,
         password,
       });
 
-      login(
-        response.access_token,
-        response.user
-      );
+      // Save authentication data
+      login(response.access_token, response.user);
 
+      // Go to dashboard
       navigate("/dashboard", {
         replace: true,
       });
     } catch (err: any) {
-      const message =
-        err?.response?.data?.detail ||
-        "Invalid email or password.";
+      const status = err?.response?.status;
+      const backendMessage = err?.response?.data?.detail;
 
-      setError(message);
+      if (status === 401) {
+        setError("Invalid email or password.");
+      } else if (status === 404) {
+        setError("Authentication service is not available.");
+      } else if (status >= 500) {
+        setError("Server error. Please try again later.");
+      } else {
+        setError(
+          backendMessage ||
+            "Unable to sign in. Please check your details."
+        );
+      }
     } finally {
       setLoading(false);
     }
@@ -81,33 +86,28 @@ export default function LoginPage() {
   const handleSendOTP = async () => {
     setError("");
 
-    if (!phone) {
+    if (!phone.trim()) {
       setError("Please enter your phone number.");
       return;
     }
 
-    // Real SMS provider will be connected here.
+    // Phone OTP backend is not connected yet.
     setOtpSent(true);
   };
 
   const handleVerifyOTP = async (
-    event: React.FormEvent
+    event: React.FormEvent<HTMLFormElement>
   ) => {
     event.preventDefault();
 
     setError("");
 
-    if (!otp) {
+    if (!otp.trim()) {
       setError("Please enter the OTP.");
       return;
     }
 
-    // Real OTP verification will be connected
-    // after the SMS backend is implemented.
-
-    setError(
-      "Phone OTP backend is not connected yet."
-    );
+    setError("Phone OTP backend is not connected yet.");
   };
 
   return (
@@ -115,8 +115,7 @@ export default function LoginPage() {
       <div className="grid min-h-screen lg:grid-cols-2">
 
         {/* LEFT SIDE */}
-
-        <div className="hidden lg:flex flex-col justify-between bg-primary p-12 text-white">
+        <div className="hidden flex-col justify-between bg-primary p-12 text-white lg:flex">
 
           <div>
             <div className="flex items-center gap-3">
@@ -158,15 +157,13 @@ export default function LoginPage() {
         </div>
 
         {/* RIGHT SIDE */}
-
         <div className="flex items-center justify-center p-6 sm:p-10">
-
           <div className="w-full max-w-md">
 
-            {/* Mobile Logo */}
-
+            {/* MOBILE LOGO */}
             <div className="mb-8 lg:hidden">
               <div className="flex items-center gap-3">
+
                 <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-primary font-bold text-white">
                   V
                 </div>
@@ -180,6 +177,7 @@ export default function LoginPage() {
                     Business Operating System
                   </p>
                 </div>
+
               </div>
             </div>
 
@@ -191,8 +189,7 @@ export default function LoginPage() {
               Login to your VyaparAI account.
             </p>
 
-            {/* Login Mode */}
-
+            {/* LOGIN MODE */}
             <div className="mt-8 grid grid-cols-2 rounded-xl bg-surface-2 p-1">
 
               <button
@@ -228,7 +225,6 @@ export default function LoginPage() {
             </div>
 
             {/* GOOGLE */}
-
             <button
               type="button"
               onClick={() =>
@@ -242,6 +238,7 @@ export default function LoginPage() {
               Continue with Google
             </button>
 
+            {/* DIVIDER */}
             <div className="my-6 flex items-center gap-4">
               <div className="h-px flex-1 bg-border" />
 
@@ -253,21 +250,20 @@ export default function LoginPage() {
             </div>
 
             {/* ERROR */}
-
             {error && (
               <div className="mb-5 rounded-xl border border-red-500/20 bg-red-500/10 px-4 py-3 text-sm text-red-600 dark:text-red-400">
                 {error}
               </div>
             )}
 
-            {/* EMAIL */}
-
+            {/* EMAIL LOGIN */}
             {mode === "email" && (
               <form
                 onSubmit={handleEmailLogin}
                 className="space-y-5"
               >
 
+                {/* EMAIL */}
                 <div>
                   <label className="mb-2 block text-sm font-medium">
                     Email address
@@ -282,19 +278,34 @@ export default function LoginPage() {
                     <input
                       type="email"
                       value={email}
-                      onChange={(e) =>
-                        setEmail(e.target.value)
-                      }
+                      onChange={(e) => {
+                        setEmail(e.target.value);
+                        setError("");
+                      }}
                       placeholder="you@example.com"
+                      autoComplete="email"
                       className="w-full rounded-xl border border-border bg-surface py-3 pl-10 pr-4 outline-none transition focus:border-primary focus:ring-2 focus:ring-primary/20"
                     />
                   </div>
                 </div>
 
+                {/* PASSWORD */}
                 <div>
-                  <label className="mb-2 block text-sm font-medium">
-                    Password
-                  </label>
+                  <div className="mb-2 flex items-center justify-between">
+                    <label className="block text-sm font-medium">
+                      Password
+                    </label>
+
+                    <button
+                      type="button"
+                      onClick={() =>
+                        navigate("/forgot-password")
+                      }
+                      className="text-sm font-medium text-primary hover:underline"
+                    >
+                      Forgot password?
+                    </button>
+                  </div>
 
                   <div className="relative">
                     <Lock
@@ -309,21 +320,28 @@ export default function LoginPage() {
                           : "password"
                       }
                       value={password}
-                      onChange={(e) =>
-                        setPassword(e.target.value)
-                      }
+                      onChange={(e) => {
+                        setPassword(e.target.value);
+                        setError("");
+                      }}
                       placeholder="Enter password"
+                      autoComplete="current-password"
                       className="w-full rounded-xl border border-border bg-surface py-3 pl-10 pr-11 outline-none transition focus:border-primary focus:ring-2 focus:ring-primary/20"
                     />
 
                     <button
                       type="button"
+                      aria-label={
+                        showPassword
+                          ? "Hide password"
+                          : "Show password"
+                      }
                       onClick={() =>
                         setShowPassword(
-                          (prev) => !prev
+                          (previous) => !previous
                         )
                       }
-                      className="absolute right-3 top-1/2 -translate-y-1/2 text-text-secondary"
+                      className="absolute right-3 top-1/2 -translate-y-1/2 text-text-secondary hover:text-primary"
                     >
                       {showPassword ? (
                         <EyeOff size={18} />
@@ -334,14 +352,13 @@ export default function LoginPage() {
                   </div>
                 </div>
 
+                {/* SIGN IN */}
                 <button
                   type="submit"
                   disabled={loading}
                   className="flex w-full items-center justify-center gap-2 rounded-xl bg-primary py-3.5 font-semibold text-white transition hover:bg-primary-dark disabled:cursor-not-allowed disabled:opacity-60"
                 >
-                  {loading
-                    ? "Signing in..."
-                    : "Sign in"}
+                  {loading ? "Signing in..." : "Sign in"}
 
                   {!loading && (
                     <ArrowRight size={18} />
@@ -352,7 +369,6 @@ export default function LoginPage() {
             )}
 
             {/* PHONE OTP */}
-
             {mode === "phone" && (
               <form
                 onSubmit={handleVerifyOTP}
@@ -377,6 +393,7 @@ export default function LoginPage() {
                         setPhone(e.target.value)
                       }
                       placeholder="+91 9876543210"
+                      autoComplete="tel"
                       className="w-full rounded-xl border border-border bg-surface py-3 pl-10 pr-4 outline-none focus:border-primary focus:ring-2 focus:ring-primary/20"
                     />
                   </div>
@@ -421,6 +438,7 @@ export default function LoginPage() {
               </form>
             )}
 
+            {/* REGISTER */}
             <p className="mt-8 text-center text-sm text-text-secondary">
               Don't have an account?{" "}
               <button
@@ -433,7 +451,6 @@ export default function LoginPage() {
             </p>
 
           </div>
-
         </div>
       </div>
     </div>
