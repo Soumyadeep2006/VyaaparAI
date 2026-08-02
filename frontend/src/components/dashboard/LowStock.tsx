@@ -1,21 +1,17 @@
 import { useQuery } from "@tanstack/react-query";
-import axios from "axios";
 
+import api from "../../api/axios";
 import Card from "../common/Card";
 import Badge from "../common/Badge";
 
 interface Product {
   id: string;
   name: string;
-  stock: number;
+  quantity: number;
 }
 
-const API = axios.create({
-  baseURL: "http://127.0.0.1:8000/api",
-});
-
-async function getLowStock() {
-  const response = await API.get("/inventory/low-stock");
+async function getLowStock(): Promise<Product[]> {
+  const response = await api.get("/api/inventory/low-stock");
   return response.data;
 }
 
@@ -65,13 +61,11 @@ export default function LowStock() {
               </p>
 
               <p className="text-sm text-text-secondary">
-                {item.stock} units left
+                {item.quantity} units left
               </p>
             </div>
 
-            <Badge color="red">
-              Low
-            </Badge>
+            <Badge color="red">Low</Badge>
           </div>
         ))}
       </div>

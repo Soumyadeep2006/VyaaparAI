@@ -36,7 +36,6 @@ export default function InventoryPage() {
     useState<Product | null>(null);
 
   const categories = useMemo<string[]>(() => {
-    // Ensure the resulting array is typed as string[] to satisfy TypeScript
     const unique = Array.from(
       new Set(products.map((p: Product) => p.category))
     ) as string[];
@@ -46,16 +45,18 @@ export default function InventoryPage() {
 
   const filteredProducts = useMemo(() => {
     return products.filter((product: Product) => {
+      const searchTerm = search.toLowerCase();
+
       const matchesSearch =
         product.name
           .toLowerCase()
-          .includes(search.toLowerCase()) ||
-        product.sku
+          .includes(searchTerm) ||
+        (product.sku ?? "")
           .toLowerCase()
-          .includes(search.toLowerCase()) ||
+          .includes(searchTerm) ||
         product.category
           .toLowerCase()
-          .includes(search.toLowerCase());
+          .includes(searchTerm);
 
       const matchesCategory =
         category === "All" ||
@@ -66,32 +67,38 @@ export default function InventoryPage() {
   }, [products, search, category]);
 
   const handleSaveProduct = async (data: {
-  name: string;
-  sku: string;
-  category: string;
-  price: number;
-  stock: number;
-}) => {
-  try {
-    console.log("Submitting:", data);
+    name: string;
+    sku?: string;
+    category: string;
+    price: number;
+    stock: number;
+  }) => {
+    try {
+      console.log("Submitting:", data);
 
-    if (editingProduct) {
-      await updateProduct(editingProduct.id.toString(), data);
-      alert("Product Updated Successfully");
-    } else {
-      await addProduct(data);
-      alert("Product Added Successfully");
+      if (editingProduct) {
+        await updateProduct(
+          editingProduct.id.toString(),
+          data
+        );
+
+        alert("Product Updated Successfully");
+      } else {
+        await addProduct(data);
+
+        alert("Product Added Successfully");
+      }
+
+      await refetch();
+
+      setEditingProduct(null);
+      setShowForm(false);
+    } catch (error) {
+      console.error(error);
+
+      alert("Failed to save product.");
     }
-
-    await refetch();
-
-    setEditingProduct(null);
-    setShowForm(false);
-  } catch (error) {
-    console.error(error);
-    alert("Failed to save product.");
-  }
-};
+  };
 
   const handleDeleteProduct = async () => {
     if (!selectedProduct) return;
@@ -113,6 +120,7 @@ export default function InventoryPage() {
   return (
     <DashboardLayout>
       <div className="space-y-8">
+
         <InventoryHeader
           onAddProduct={() => {
             setEditingProduct(null);
@@ -160,7 +168,9 @@ export default function InventoryPage() {
           }}
           onDelete={handleDeleteProduct}
         />
+
       </div>
     </DashboardLayout>
   );
 }
+
