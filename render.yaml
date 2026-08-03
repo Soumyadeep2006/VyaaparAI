@@ -2,16 +2,27 @@ services:
   - type: web
     name: vyaparai-backend
     runtime: python
-    buildCommand: pip install -r requirements.txt
-    startCommand: uvicorn app.main:app --host 0.0.0.0 --port $PORT
+    buildCommand: pip install -r backend/requirements.txt
+    startCommand: cd backend && uvicorn app.main:app --host 0.0.0.0 --port $PORT
+
     envVars:
       - key: PYTHON_VERSION
         value: 3.11
+
+      - key: MONGODB_URI
+        sync: false
+
+      - key: DATABASE_NAME
+        value: vyaparai
+
       - key: GEMINI_API_KEY
         sync: false
-      - key: MONGODB_URL
-        sync: false
+
       - key: SECRET_KEY
         sync: false
+
       - key: ALGORITHM
         value: HS256
+
+      - key: ACCESS_TOKEN_EXPIRE_MINUTES
+        value: "1440"
