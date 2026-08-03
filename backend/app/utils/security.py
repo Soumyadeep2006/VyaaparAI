@@ -1,50 +1,92 @@
 from datetime import datetime, timedelta, timezone
+from typing import Any
 
-from jose import jwt
-from passlib.context import CryptContext
+import bcrypt
+from jose import JWTError, jwt
 
 from app.config import settings
 
 
-pwd_context = CryptContext(
-    schemes=["bcrypt"],
-    deprecated="auto",
-)
+# ============================================================
+# PASSWORD HASHING
+# ============================================================
 
+def hash_password(password: str) -> str:
+    """
+    Hash a password using bcrypt.
+    bcrypt only supports passwords up to 72 bytes.
+    """
+    password_bytes = password.encode("utf-8")
 
-def hash_password(password: str):
-    return pwd_context.hash(password)
+    if len(password_bytes) > 72:
+        raise ValueError(
+            "Password must be 72 bytes or fewer."
+        )
+
+    salt = bcrypt.gensalt()
+
+    return bcrypt.hashpw(
+        password_bytes,
+        salt,
+    ).decode("utf-8")
 
 
 def verify_password(
-    plain_password: str,
+    password: str,
     hashed_password: str,
-):
-    return pwd_context.verify(
-        plain_password,
-        hashed_password,
-    )
+) -> bool:
+    """
+    Verify a plain-text password against a bcrypt hash.
+    """
+    password_bytes = password.encode("utf-8")
+
+    if len(password_bytes) > 72:
+        return False
+
+    try:
+        return bcrypt.checkpw(
+            password_bytes,
+            hashed_password.encode("utf-8"),
+        )
+    except (ValueError, TypeError):
+        return False
 
 
-def create_access_token(data: dict):
+# ============================================================
+# JWT
+# ============================================================
 
+def create_access_token(
+    data: dict[str, Any],
+    expires_delta: timedelta | None = None,
+) -> str:
     to_encode = data.copy()
 
-    expire = datetime.now(timezone.utc) + timedelta(
-        minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES
-    )
+    if expires_delta:
+        expire = datetime.now(timezone.utc) + expires_delta
+    else:
+        expire = datetime.now(timezone.utc) + timedelta(
+            minutes=60
+        )
 
-    to_encode["exp"] = expire
+    to_encode.update({
+        "exp": expire
+    })
 
     return jwt.encode(
         to_encode,
-        settings.SECRET_KEY,
-        algorithm=settings.ALGORITHM,
+        settings.JWT_SECRET_KEY,
+        algorithm=settings.JWT_ALGORITHM,
     )
 
 
-def create_password_reset_token(email: str):
+# ============================================================
+# PASSWORD RESET TOKEN
+# ============================================================
 
+def create_password_reset_token(
+    email: str,
+) -> str:
     expire = datetime.now(timezone.utc) + timedelta(
         minutes=30
     )
@@ -57,25 +99,30 @@ def create_password_reset_token(email: str):
 
     return jwt.encode(
         payload,
-        settings.SECRET_KEY,
-        algorithm=settings.ALGORITHM,
+        settings.JWT_SECRET_KEY,
+        algorithm=settings.JWT_ALGORITHM,
     )
 
 
-def verify_password_reset_token(token: str):
-
+def verify_password_reset_token(
+    token: str,
+) -> str | None:
     try:
-
         payload = jwt.decode(
             token,
-            settings.SECRET_KEY,
-            algorithms=[settings.ALGORITHM],
+            settings.JWT_SECRET_KEY,
+            algorithms=[settings.JWT_ALGORITHM],
         )
 
         if payload.get("type") != "password_reset":
             return None
 
-        return payload.get("sub")
+        email = payload.get("sub")
 
-    except Exception:
+        if not email:
+            return None
+
+        return str(email)
+
+    except JWTError:
         return None
