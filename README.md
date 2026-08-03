@@ -15,7 +15,6 @@ The platform combines traditional business management tools with **AI-powered in
 | ⚙️ **Backend API**       | https://vyaparai-backend-vdko.onrender.com                                          |
 | 🎥 **Demo Video**        | https://drive.google.com/file/d/1rnQ-TNym-MmbRZ4lcdKOsKRrWaX_RRQ4/view?usp=drivesdk |
 
-> **Note:** The demo video requires Google Drive sharing to be set to **Anyone with the link → Viewer**.
 
 ---
 
