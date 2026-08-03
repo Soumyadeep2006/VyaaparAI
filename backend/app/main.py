@@ -21,6 +21,10 @@ app = FastAPI(
 )
 
 
+# ============================================================
+# CORS CONFIGURATION
+# ============================================================
+
 app.add_middleware(
     CORSMiddleware,
     allow_origins=[
@@ -28,16 +32,25 @@ app.add_middleware(
         "http://localhost:5173",
         "http://127.0.0.1:5173",
 
-        # Vercel frontend
+        # Vercel production domain
         "https://vyapar-ai-tzzv.vercel.app",
     ],
+
+    # Allow Vercel deployment/preview URLs
+    allow_origin_regex=(
+        r"https://vyapar-ai-tzzv-[a-z0-9]+-mrking7979s-projects\.vercel\.app"
+    ),
+
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
 
 
-# Routers
+# ============================================================
+# ROUTERS
+# ============================================================
+
 app.include_router(auth_router)
 app.include_router(inventory_router)
 app.include_router(customers_router)
@@ -48,6 +61,10 @@ app.include_router(reports_router)
 app.include_router(ai_router)
 
 
+# ============================================================
+# ROOT
+# ============================================================
+
 @app.get("/")
 async def root():
     return {
@@ -55,6 +72,10 @@ async def root():
         "version": "1.0.0",
     }
 
+
+# ============================================================
+# HEALTH CHECK
+# ============================================================
 
 @app.get("/health")
 async def health():
