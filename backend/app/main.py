@@ -12,6 +12,7 @@ from app.routers.dashboard import router as dashboard_router
 from app.routers.reports import router as reports_router
 from app.routers.ai import router as ai_router
 
+
 app = FastAPI(
     title=settings.APP_NAME,
     version="1.0.0",
@@ -19,16 +20,22 @@ app = FastAPI(
     redoc_url="/redoc",
 )
 
+
 app.add_middleware(
     CORSMiddleware,
     allow_origins=[
+        # Local frontend
         "http://localhost:5173",
-        "https://vyapar-ihjapjjt5-mrking7979s-projects.vercel.app",
+        "http://127.0.0.1:5173",
+
+        # Vercel frontend
+        "https://YOUR-VERCEL-DOMAIN.vercel.app",
     ],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
 
 # Routers
 app.include_router(auth_router)
@@ -44,7 +51,7 @@ app.include_router(ai_router)
 @app.get("/")
 async def root():
     return {
-        "message": "🚀 VyaparAI Backend Running",
+        "message": "VyaparAI Backend Running",
         "version": "1.0.0",
     }
 
@@ -52,5 +59,5 @@ async def root():
 @app.get("/health")
 async def health():
     return {
-        "status": "healthy"
+        "status": "healthy",
     }

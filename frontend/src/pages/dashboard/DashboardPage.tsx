@@ -60,28 +60,28 @@ export default function DashboardPage() {
           <KPIcard
             title="Revenue"
             value={`₹${Number(data?.revenue ?? 0).toLocaleString("en-IN")}`}
-            change="+12.5%"
+            change=""
             icon={IndianRupee}
           />
 
           <KPIcard
             title="Orders"
             value={String(data?.orders ?? 0)}
-            change="+8.1%"
+            change=""
             icon={ShoppingCart}
           />
 
           <KPIcard
             title="Customers"
             value={String(data?.customers ?? 0)}
-            change="+5.7%"
+            change=""
             icon={Users}
           />
 
           <KPIcard
             title="Products"
             value={String(data?.products ?? 0)}
-            change="+3.2%"
+            change=""
             icon={Package}
           />
         </div>

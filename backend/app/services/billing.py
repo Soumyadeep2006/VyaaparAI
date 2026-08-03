@@ -6,39 +6,34 @@ from app.database import db
 
 
 def serialize_invoice(invoice):
-    """
-    Convert MongoDB invoice document into JSON-safe data.
-    """
-
     invoice["id"] = str(invoice.pop("_id"))
-
     return invoice
 
 
-async def get_invoices():
-    """
-    Get all invoices.
-    """
-
+async def get_invoices(user_email: str):
     invoices = []
 
-    cursor = db.invoices.find().sort("created_at", -1)
+    cursor = db.invoices.find(
+        {"owner_email": user_email}
+    ).sort("created_at", -1)
 
     async for invoice in cursor:
-        invoices.append(serialize_invoice(invoice))
+        invoices.append(
+            serialize_invoice(invoice)
+        )
 
     return invoices
 
 
-async def create_invoice(data: dict):
-    """
-    Create a new invoice.
-    """
-
+async def create_invoice(
+    data: dict,
+    user_email: str,
+):
     now = datetime.now(timezone.utc)
 
     invoice = {
         **data,
+        "owner_email": user_email,
         "status": data.get("status", "Pending"),
         "created_at": now,
         "updated_at": now,
@@ -47,7 +42,10 @@ async def create_invoice(data: dict):
     result = await db.invoices.insert_one(invoice)
 
     created_invoice = await db.invoices.find_one(
-        {"_id": result.inserted_id}
+        {
+            "_id": result.inserted_id,
+            "owner_email": user_email,
+        }
     )
 
     if not created_invoice:
@@ -58,11 +56,11 @@ async def create_invoice(data: dict):
     return serialize_invoice(created_invoice)
 
 
-async def update_invoice(invoice_id: str, data: dict):
-    """
-    Update an existing invoice.
-    """
-
+async def update_invoice(
+    invoice_id: str,
+    data: dict,
+    user_email: str,
+):
     if not ObjectId.is_valid(invoice_id):
         return {
             "error": "Invalid invoice ID"
@@ -73,7 +71,10 @@ async def update_invoice(invoice_id: str, data: dict):
     data["updated_at"] = datetime.now(timezone.utc)
 
     result = await db.invoices.update_one(
-        {"_id": object_id},
+        {
+            "_id": object_id,
+            "owner_email": user_email,
+        },
         {
             "$set": data
         },
@@ -85,7 +86,10 @@ async def update_invoice(invoice_id: str, data: dict):
         }
 
     invoice = await db.invoices.find_one(
-        {"_id": object_id}
+        {
+            "_id": object_id,
+            "owner_email": user_email,
+        }
     )
 
     if not invoice:
@@ -96,11 +100,10 @@ async def update_invoice(invoice_id: str, data: dict):
     return serialize_invoice(invoice)
 
 
-async def delete_invoice(invoice_id: str):
-    """
-    Delete an invoice.
-    """
-
+async def delete_invoice(
+    invoice_id: str,
+    user_email: str,
+):
     if not ObjectId.is_valid(invoice_id):
         return {
             "error": "Invalid invoice ID"
@@ -109,7 +112,10 @@ async def delete_invoice(invoice_id: str):
     object_id = ObjectId(invoice_id)
 
     result = await db.invoices.delete_one(
-        {"_id": object_id}
+        {
+            "_id": object_id,
+            "owner_email": user_email,
+        }
     )
 
     if result.deleted_count == 0:
@@ -125,11 +131,8 @@ async def delete_invoice(invoice_id: str):
 async def update_invoice_status(
     invoice_id: str,
     status: str,
+    user_email: str,
 ):
-    """
-    Update invoice payment status.
-    """
-
     if not ObjectId.is_valid(invoice_id):
         return {
             "error": "Invalid invoice ID"
@@ -152,7 +155,10 @@ async def update_invoice_status(
     object_id = ObjectId(invoice_id)
 
     result = await db.invoices.update_one(
-        {"_id": object_id},
+        {
+            "_id": object_id,
+            "owner_email": user_email,
+        },
         {
             "$set": {
                 "status": status,
@@ -167,7 +173,10 @@ async def update_invoice_status(
         }
 
     invoice = await db.invoices.find_one(
-        {"_id": object_id}
+        {
+            "_id": object_id,
+            "owner_email": user_email,
+        }
     )
 
     if not invoice:

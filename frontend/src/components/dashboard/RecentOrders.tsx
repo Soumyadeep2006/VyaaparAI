@@ -44,7 +44,6 @@ export default function RecentOrders() {
 
   return (
     <div className="rounded-2xl border border-border bg-surface p-6 shadow-sm">
-
       <div className="mb-6">
         <h2 className="text-xl font-semibold text-text-primary">
           Recent Orders
@@ -62,7 +61,6 @@ export default function RecentOrders() {
       ) : (
         <div className="overflow-x-auto">
           <table className="w-full">
-
             <thead>
               <tr className="border-b border-border">
                 <th className="py-3 text-left text-sm font-semibold text-text-secondary">
@@ -95,7 +93,7 @@ export default function RecentOrders() {
                   invoice.customer_name ??
                   "Unknown Customer";
 
-                const amount = invoice.total ?? 0;
+                const amount = Number(invoice.total ?? 0);
 
                 const status =
                   invoice.status ?? "Pending";
@@ -134,7 +132,6 @@ export default function RecentOrders() {
                 );
               })}
             </tbody>
-
           </table>
         </div>
       )}

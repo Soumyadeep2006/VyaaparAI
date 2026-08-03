@@ -1,4 +1,4 @@
-from fastapi import APIRouter
+from fastapi import APIRouter, Depends
 
 from app.schemas.invoice import InvoiceCreate
 
@@ -10,6 +10,8 @@ from app.services.billing import (
     update_invoice_status,
 )
 
+from app.utils.dependencies import get_current_user
+
 
 router = APIRouter(
     prefix="/api/billing",
@@ -18,16 +20,22 @@ router = APIRouter(
 
 
 @router.get("/")
-async def all_invoices():
-    return await get_invoices()
+async def all_invoices(
+    current_user: str = Depends(get_current_user),
+):
+    return await get_invoices(
+        current_user
+    )
 
 
 @router.post("/")
 async def add_invoice(
     invoice: InvoiceCreate,
+    current_user: str = Depends(get_current_user),
 ):
     return await create_invoice(
-        invoice.model_dump()
+        invoice.model_dump(),
+        current_user,
     )
 
 
@@ -35,10 +43,12 @@ async def add_invoice(
 async def edit_invoice(
     invoice_id: str,
     invoice: InvoiceCreate,
+    current_user: str = Depends(get_current_user),
 ):
     return await update_invoice(
         invoice_id,
         invoice.model_dump(),
+        current_user,
     )
 
 
@@ -46,17 +56,21 @@ async def edit_invoice(
 async def change_invoice_status(
     invoice_id: str,
     status: str,
+    current_user: str = Depends(get_current_user),
 ):
     return await update_invoice_status(
         invoice_id,
         status,
+        current_user,
     )
 
 
 @router.delete("/{invoice_id}")
 async def remove_invoice(
     invoice_id: str,
+    current_user: str = Depends(get_current_user),
 ):
     return await delete_invoice(
-        invoice_id
+        invoice_id,
+        current_user,
     )

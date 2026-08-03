@@ -3,6 +3,7 @@ import os
 
 load_dotenv()
 
+
 class Settings:
     APP_NAME = "VyaparAI Backend"
 
@@ -23,7 +24,7 @@ class Settings:
 
     SECRET_KEY = os.getenv(
         "SECRET_KEY",
-        "vyaparai-secret-key"
+        "change-this-secret-key"
     )
 
     ALGORITHM = "HS256"

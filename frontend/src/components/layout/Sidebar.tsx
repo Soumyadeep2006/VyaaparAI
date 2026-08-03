@@ -1,7 +1,21 @@
+import { useAuth } from "../../context/AuthContext";
 import { navigation } from "../../constants/navigation";
 import SidebarItem from "./SidebarItem";
 
 export default function Sidebar() {
+  const { user } = useAuth();
+
+  const userName = user?.name || "User";
+
+  const userInitials =
+    userName
+      .trim()
+      .split(/\s+/)
+      .map((word) => word[0])
+      .join("")
+      .slice(0, 2)
+      .toUpperCase() || "U";
+
   return (
     <aside className="hidden w-72 shrink-0 flex-col border-r border-border bg-surface shadow-sm lg:flex">
 
@@ -11,8 +25,10 @@ export default function Sidebar() {
 
         <div className="flex items-center gap-3">
 
+          {/* Dynamic User Logo */}
+
           <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-primary text-lg font-bold text-white shadow">
-            V
+            {userInitials}
           </div>
 
           <div>

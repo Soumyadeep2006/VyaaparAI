@@ -2,18 +2,20 @@ from datetime import datetime
 
 from app.database import db
 
-bill_collection = db.bills
 
-
-async def sales_report():
-
+async def sales_report(
+    user_email: str,
+):
     total_sales = 0
     total_orders = 0
 
-    async for bill in bill_collection.find():
-
+    async for invoice in db.invoices.find(
+        {"owner_email": user_email}
+    ):
         total_orders += 1
-        total_sales += bill.get("total", 0)
+        total_sales += float(
+            invoice.get("total", 0)
+        )
 
     return {
         "total_orders": total_orders,
@@ -21,18 +23,26 @@ async def sales_report():
     }
 
 
-async def daily_sales():
-
+async def daily_sales(
+    user_email: str,
+):
     today = datetime.utcnow().date()
 
     total = 0
     orders = 0
 
-    async for bill in bill_collection.find():
+    async for invoice in db.invoices.find(
+        {"owner_email": user_email}
+    ):
+        created_at = invoice.get("created_at")
 
-        if bill["created_at"].date() == today:
+        if not created_at:
+            continue
 
-            total += bill.get("total", 0)
+        if created_at.date() == today:
+            total += float(
+                invoice.get("total", 0)
+            )
             orders += 1
 
     return {
@@ -42,21 +52,29 @@ async def daily_sales():
     }
 
 
-async def monthly_sales():
-
+async def monthly_sales(
+    user_email: str,
+):
     now = datetime.utcnow()
 
     total = 0
     orders = 0
 
-    async for bill in bill_collection.find():
+    async for invoice in db.invoices.find(
+        {"owner_email": user_email}
+    ):
+        created_at = invoice.get("created_at")
+
+        if not created_at:
+            continue
 
         if (
-            bill["created_at"].month == now.month
-            and bill["created_at"].year == now.year
+            created_at.month == now.month
+            and created_at.year == now.year
         ):
-
-            total += bill.get("total", 0)
+            total += float(
+                invoice.get("total", 0)
+            )
             orders += 1
 
     return {

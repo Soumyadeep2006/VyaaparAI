@@ -52,7 +52,6 @@ export default function RevenueChart() {
 
   return (
     <div className="rounded-2xl border border-border bg-surface p-6 shadow-sm">
-
       {/* Header */}
       <div className="mb-6">
         <h2 className="text-xl font-bold text-text-primary">

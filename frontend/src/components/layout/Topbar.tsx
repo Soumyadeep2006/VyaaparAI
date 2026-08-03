@@ -4,8 +4,22 @@ import {
 } from "lucide-react";
 
 import ThemeToggle from "./ThemeToggle";
+import { useAuth } from "../../context/AuthContext";
 
 export default function Topbar() {
+  const { user } = useAuth();
+
+  const userName = user?.name || "User";
+
+  const userInitials =
+    userName
+      .trim()
+      .split(/\s+/)
+      .map((word) => word[0])
+      .join("")
+      .slice(0, 2)
+      .toUpperCase() || "U";
+
   return (
     <header className="sticky top-0 z-20 flex h-16 items-center justify-between border-b border-border bg-surface px-6 shadow-sm">
 
@@ -49,14 +63,18 @@ export default function Topbar() {
 
         <div className="flex items-center gap-3 rounded-xl px-2 py-1">
 
+          {/* Dynamic Initials */}
+
           <div className="flex h-10 w-10 items-center justify-center rounded-full bg-primary font-semibold text-white shadow">
-            M
+            {userInitials}
           </div>
 
           <div className="hidden md:block">
 
+            {/* Dynamic Name */}
+
             <p className="text-sm font-semibold text-text-primary">
-              Mohit Raj
+              {userName}
             </p>
 
             <p className="text-xs text-text-secondary">

@@ -12,7 +12,10 @@ interface Product {
 
 async function getLowStock(): Promise<Product[]> {
   const response = await api.get("/api/inventory/low-stock");
-  return response.data;
+
+  return Array.isArray(response.data)
+    ? response.data
+    : [];
 }
 
 export default function LowStock() {
@@ -43,32 +46,40 @@ export default function LowStock() {
         </p>
       )}
 
-      {!isLoading && !isError && products.length === 0 && (
-        <p className="text-sm text-text-secondary">
-          No low-stock products.
-        </p>
-      )}
+      {!isLoading &&
+        !isError &&
+        products.length === 0 && (
+          <p className="text-sm text-text-secondary">
+            No low-stock products.
+          </p>
+        )}
 
-      <div className="space-y-4">
-        {products.map((item) => (
-          <div
-            key={item.id}
-            className="flex items-center justify-between rounded-xl border border-border bg-surface-2 p-4"
-          >
-            <div>
-              <p className="font-medium text-text-primary">
-                {item.name}
-              </p>
+      {!isLoading &&
+        !isError &&
+        products.length > 0 && (
+          <div className="space-y-4">
+            {products.map((item) => (
+              <div
+                key={item.id}
+                className="flex items-center justify-between rounded-xl border border-border bg-surface-2 p-4"
+              >
+                <div>
+                  <p className="font-medium text-text-primary">
+                    {item.name}
+                  </p>
 
-              <p className="text-sm text-text-secondary">
-                {item.quantity} units left
-              </p>
-            </div>
+                  <p className="text-sm text-text-secondary">
+                    {item.quantity} units left
+                  </p>
+                </div>
 
-            <Badge color="red">Low</Badge>
+                <Badge color="red">
+                  Low
+                </Badge>
+              </div>
+            ))}
           </div>
-        ))}
-      </div>
+        )}
     </Card>
   );
 }

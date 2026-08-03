@@ -18,7 +18,7 @@ import {
 } from "../../context/ThemeContext";
 
 import { useAuth } from "../../context/AuthContext";
-
+import DashboardLayout from "../../components/layout/DashboardLayout";
 export default function SettingsPage() {
   const { theme, setTheme } = useTheme();
   const { user, logout } = useAuth();
@@ -34,6 +34,7 @@ export default function SettingsPage() {
   };
 
   return (
+    <DashboardLayout>
     <div className="space-y-8">
 
       {/* Header */}
@@ -318,5 +319,6 @@ export default function SettingsPage() {
       </section>
 
     </div>
+  </DashboardLayout>
   );
 }

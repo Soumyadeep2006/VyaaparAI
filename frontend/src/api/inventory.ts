@@ -59,7 +59,7 @@ export const deleteProduct = async (id: string) => {
 
 export const searchProducts = async (query: string) => {
   const res = await api.get(
-    `/api/inventory/search?query=${query}`
+    `/api/inventory/search?q=${encodeURIComponent(query)}`
   );
 
   return res.data.map(mapProduct);

@@ -1,26 +1,32 @@
-from fastapi import APIRouter
-from app.database import db
 from datetime import datetime
+
+from fastapi import APIRouter, Depends
+
+from app.database import db
+from app.utils.dependencies import get_current_user
+
 
 router = APIRouter(
     prefix="/api/dashboard",
-    tags=["Dashboard"]
+    tags=["Dashboard"],
 )
 
 
-# =========================
-# Dashboard Summary
-# =========================
-@router.get("/")
-async def get_dashboard():
+@router.get("")
+async def get_dashboard(
+    current_user: str = Depends(get_current_user),
+):
+    owner = {
+        "owner_email": current_user
+    }
 
-    total_products = await db.products.count_documents({})
-    total_customers = await db.customers.count_documents({})
-    total_invoices = await db.invoices.count_documents({})
+    total_products = await db.products.count_documents(owner)
+    total_customers = await db.customers.count_documents(owner)
+    total_invoices = await db.invoices.count_documents(owner)
 
-    revenue = 0
+    revenue = 0.0
 
-    async for invoice in db.invoices.find():
+    async for invoice in db.invoices.find(owner):
         revenue += float(invoice.get("total", 0))
 
     return {
@@ -31,34 +37,26 @@ async def get_dashboard():
     }
 
 
-# =========================
-# Revenue Chart
-# =========================
 @router.get("/revenue")
-async def get_revenue_chart():
-
+async def get_revenue_chart(
+    current_user: str = Depends(get_current_user),
+):
     months = [
-        "Jan",
-        "Feb",
-        "Mar",
-        "Apr",
-        "May",
-        "Jun",
-        "Jul",
-        "Aug",
-        "Sep",
-        "Oct",
-        "Nov",
-        "Dec",
+        "Jan", "Feb", "Mar", "Apr",
+        "May", "Jun", "Jul", "Aug",
+        "Sep", "Oct", "Nov", "Dec",
     ]
 
     revenue = {
-        month: 0
+        month: 0.0
         for month in months
     }
 
-    async for invoice in db.invoices.find():
-
+    async for invoice in db.invoices.find(
+        {
+            "owner_email": current_user
+        }
+    ):
         date_value = (
             invoice.get("created_at")
             or invoice.get("date")
@@ -75,9 +73,10 @@ async def get_revenue_chart():
 
             month_name = date_value.strftime("%b")
 
-            revenue[month_name] += float(
-                invoice.get("total", 0)
-            )
+            if month_name in revenue:
+                revenue[month_name] += float(
+                    invoice.get("total", 0)
+                )
 
         except (ValueError, TypeError):
             continue

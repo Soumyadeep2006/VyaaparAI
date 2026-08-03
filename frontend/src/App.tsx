@@ -13,12 +13,15 @@ import CustomersPage from "./pages/customers/CustomersPage";
 import SuppliersPage from "./pages/suppliers/SuppliersPage";
 import ReportsPage from "./pages/reports/ReportsPage";
 import AIPage from "./pages/ai/AIPage";
+import SettingsPage from "./pages/settings/SettingsPage";
+
 import LoginPage from "./pages/auth/LoginPage";
 import RegisterPage from "./pages/auth/RegisterPage";
 import ForgotPasswordPage from "./pages/auth/ForgotPasswordPage";
-import ProtectedRoute from "./components/auth/ProtectedRoute";
 import ResetPasswordPage from "./pages/auth/ResetPasswordPage";
-import SettingsPage from "./pages/settings/SettingsPage";
+
+import ProtectedRoute from "./components/auth/ProtectedRoute";
+
 function Protected({
   children,
 }: {
@@ -35,31 +38,42 @@ export default function App() {
   return (
     <Routes>
 
-      {/* Authentication */}
+      {/* ================= AUTH ================= */}
+
       <Route
         path="/login"
         element={<LoginPage />}
       />
+
       <Route
         path="/register"
         element={<RegisterPage />}
       />
+
       <Route
         path="/forgot-password"
         element={<ForgotPasswordPage />}
       />
+
       <Route
         path="/reset-password"
         element={<ResetPasswordPage />}
       />
-      
-      {/* Default */}
+
+      {/* ================= DEFAULT ================= */}
+
       <Route
         path="/"
-        element={<Navigate to="/dashboard" replace />}
+        element={
+          <Navigate
+            to="/dashboard"
+            replace
+          />
+        }
       />
 
-      {/* Dashboard */}
+      {/* ================= PROTECTED ================= */}
+
       <Route
         path="/dashboard"
         element={
@@ -69,7 +83,6 @@ export default function App() {
         }
       />
 
-      {/* Inventory */}
       <Route
         path="/inventory"
         element={
@@ -79,7 +92,6 @@ export default function App() {
         }
       />
 
-      {/* Billing */}
       <Route
         path="/billing"
         element={
@@ -89,7 +101,6 @@ export default function App() {
         }
       />
 
-      {/* Customers */}
       <Route
         path="/customers"
         element={
@@ -99,7 +110,6 @@ export default function App() {
         }
       />
 
-      {/* Suppliers */}
       <Route
         path="/suppliers"
         element={
@@ -109,7 +119,6 @@ export default function App() {
         }
       />
 
-      {/* Reports */}
       <Route
         path="/reports"
         element={
@@ -119,7 +128,6 @@ export default function App() {
         }
       />
 
-      {/* AI */}
       <Route
         path="/ai"
         element={
@@ -128,7 +136,7 @@ export default function App() {
           </Protected>
         }
       />
-      {/* Settings */}
+
       <Route
         path="/settings"
         element={
@@ -137,9 +145,17 @@ export default function App() {
           </Protected>
         }
       />
+
+      {/* ================= FALLBACK ================= */}
+
       <Route
         path="*"
-        element={<Navigate to="/dashboard" replace />}
+        element={
+          <Navigate
+            to="/dashboard"
+            replace
+          />
+        }
       />
 
     </Routes>

@@ -21,3 +21,12 @@ class TokenSchema(BaseModel):
     access_token: str
     token_type: str = "bearer"
     user: UserSchema
+
+
+class ForgotPasswordSchema(BaseModel):
+    email: EmailStr
+
+
+class ResetPasswordSchema(BaseModel):
+    token: str
+    password: str
