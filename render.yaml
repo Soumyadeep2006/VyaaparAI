@@ -24,3 +24,6 @@ services:
 
       - key: JWT_ALGORITHM
         value: HS256
+
+      - key: ACCESS_TOKEN_EXPIRE_MINUTES
+        value: 1440
