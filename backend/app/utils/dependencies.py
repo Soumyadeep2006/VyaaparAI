@@ -16,8 +16,8 @@ async def get_current_user(
     try:
         payload = jwt.decode(
             token,
-            settings.SECRET_KEY,
-            algorithms=[settings.ALGORITHM],
+            settings.JWT_SECRET_KEY,
+            algorithms=[settings.JWT_ALGORITHM],
         )
 
         email = payload.get("sub")
@@ -29,8 +29,6 @@ async def get_current_user(
             )
 
         return email
-            
-        
 
     except JWTError:
         raise HTTPException(
