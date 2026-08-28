@@ -3,21 +3,48 @@ import axios from "axios";
 const API = axios.create({
   baseURL:
     import.meta.env.VITE_API_URL ||
-    "http://127.0.0.1:8000",
+    "https://vyaparai-backend-vdko.onrender.com",
 
   headers: {
     "Content-Type": "application/json",
   },
 });
 
-API.interceptors.request.use((config) => {
-  const token = localStorage.getItem("vyaparai_token");
+// Automatically attach JWT token
+API.interceptors.request.use(
+  (config) => {
+    const token = localStorage.getItem("vyaparai_token");
 
-  if (token) {
-    config.headers.Authorization = `Bearer ${token}`;
+    if (token) {
+      config.headers.Authorization = `Bearer ${token}`;
+    }
+
+    return config;
+  },
+  (error) => Promise.reject(error)
+);
+
+// Handle authentication errors
+API.interceptors.response.use(
+  (response) => response,
+
+  (error) => {
+    if (error.response?.status === 401) {
+      localStorage.removeItem("vyaparai_token");
+      localStorage.removeItem("vyaparai_user");
+
+      const currentPath = window.location.pathname;
+
+      if (
+        currentPath !== "/login" &&
+        currentPath !== "/register"
+      ) {
+        window.location.href = "/login";
+      }
+    }
+
+    return Promise.reject(error);
   }
-
-  return config;
-});
+);
 
 export default API;

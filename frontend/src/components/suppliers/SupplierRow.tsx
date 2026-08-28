@@ -12,8 +12,15 @@ export default function SupplierRow({
   onEdit,
   onDelete,
 }: SupplierRowProps) {
+  const totalPurchase = Number(supplier.totalPurchase) || 0;
+  const pendingPayment = Number(supplier.pendingPayment) || 0;
+
+  const status = supplier.paymentStatus || (
+    pendingPayment > 0 ? "pending" : "paid"
+  );
+
   return (
-    <tr>
+    <tr className="border-t border-border">
 
       <td className="px-4 py-3">
         {supplier.name}
@@ -24,37 +31,61 @@ export default function SupplierRow({
       </td>
 
       <td className="px-4 py-3">
-        ₹{supplier.totalPurchase.toLocaleString()}
+        ₹{totalPurchase.toLocaleString("en-IN")}
       </td>
 
       <td className="px-4 py-3">
-
-        {supplier.pendingPayment > 0 ? (
-          <span className="rounded-full bg-red-100 px-3 py-1 text-red-600">
-            ₹{supplier.pendingPayment.toLocaleString()}
+        {pendingPayment > 0 ? (
+          <span className="font-medium text-red-600">
+            ₹{pendingPayment.toLocaleString("en-IN")}
           </span>
         ) : (
-          <span className="rounded-full bg-green-100 px-3 py-1 text-green-600">
+          <span className="text-gray-500">
+            ₹0
+          </span>
+        )}
+      </td>
+
+      <td className="px-4 py-3">
+        {status === "paid" && (
+          <span className="rounded-full bg-green-100 px-3 py-1 text-sm font-medium text-green-700">
             Paid
           </span>
         )}
 
+        {status === "pending" && (
+          <span className="rounded-full bg-yellow-100 px-3 py-1 text-sm font-medium text-yellow-700">
+            Pending
+          </span>
+        )}
+
+        {status === "cancelled" && (
+          <span className="rounded-full bg-gray-100 px-3 py-1 text-sm font-medium text-gray-700">
+            Cancelled
+          </span>
+        )}
       </td>
 
       <td className="px-4 py-3">
-
         <div className="flex gap-2">
 
-          <button onClick={() => onEdit(supplier)}>
+          <button
+            type="button"
+            onClick={() => onEdit(supplier)}
+            title="Edit supplier"
+          >
             <Pencil className="h-4 w-4 text-blue-600" />
           </button>
 
-          <button onClick={() => onDelete(supplier)}>
+          <button
+            type="button"
+            onClick={() => onDelete(supplier)}
+            title="Delete supplier"
+          >
             <Trash2 className="h-4 w-4 text-red-600" />
           </button>
 
         </div>
-
       </td>
 
     </tr>

@@ -12,49 +12,91 @@ export default function CustomerRow({
   onEdit,
   onDelete,
 }: Props) {
-  return (
-    <tr>
+  const purchase =
+    Number(customer.totalPurchase) || 0;
 
-      <td className="px-4 py-3">
+  const outstanding =
+    Number(customer.outstanding) || 0;
+
+  const status =
+    customer.paymentStatus || "pending";
+
+  const statusConfig = {
+    paid: {
+      label: "Paid",
+      className:
+        "bg-green-100 text-green-700",
+    },
+    pending: {
+      label: "Pending",
+      className:
+        "bg-yellow-100 text-yellow-700",
+    },
+    cancelled: {
+      label: "Cancelled",
+      className:
+        "bg-gray-100 text-gray-700",
+    },
+  };
+
+  const currentStatus =
+    statusConfig[status];
+
+  return (
+    <tr className="border-t border-gray-100">
+
+      <td className="px-4 py-4 font-medium">
         {customer.name}
       </td>
 
-      <td className="px-4 py-3">
+      <td className="px-4 py-4">
         {customer.phone}
       </td>
 
-      <td className="px-4 py-3">
-        ₹{customer.totalPurchase}
+      <td className="px-4 py-4">
+        ₹{purchase.toLocaleString("en-IN")}
       </td>
 
-      <td className="px-4 py-3">
-
-        {customer.outstanding > 0 ? (
-          <span className="rounded-full bg-red-100 px-3 py-1 text-red-600">
-            ₹{customer.outstanding}
+      <td className="px-4 py-4">
+        {outstanding > 0 ? (
+          <span className="font-medium text-red-600">
+            ₹{outstanding.toLocaleString("en-IN")}
           </span>
         ) : (
-          <span className="rounded-full bg-green-100 px-3 py-1 text-green-600">
-            Paid
+          <span className="text-gray-500">
+            ₹0
           </span>
         )}
-
       </td>
 
-      <td className="px-4 py-3">
+      <td className="px-4 py-4">
+        <span
+          className={`rounded-full px-3 py-1 text-xs font-semibold ${currentStatus.className}`}
+        >
+          {currentStatus.label}
+        </span>
+      </td>
 
-        <div className="flex gap-2">
+      <td className="px-4 py-4">
+        <div className="flex gap-3">
 
-          <button onClick={() => onEdit(customer)}>
+          <button
+            type="button"
+            onClick={() => onEdit(customer)}
+            title="Edit customer"
+          >
             <Pencil className="h-4 w-4 text-blue-600" />
           </button>
 
-          <button onClick={() => onDelete(customer)}>
+          <button
+            type="button"
+            onClick={() => onDelete(customer)}
+            title="Delete customer"
+          >
             <Trash2 className="h-4 w-4 text-red-600" />
           </button>
 
         </div>
-
       </td>
 
     </tr>

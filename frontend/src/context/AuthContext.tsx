@@ -33,35 +33,28 @@ export function AuthProvider({
 }: {
   children: ReactNode;
 }) {
-  const [token, setToken] = useState<string | null>(
-    () => localStorage.getItem(TOKEN_KEY)
-  );
+  const [token, setToken] = useState<string | null>(() => {
+    return localStorage.getItem(TOKEN_KEY);
+  });
 
-  const [user, setUser] = useState<UserData | null>(
-    () => {
-      const savedUser =
-        localStorage.getItem(USER_KEY);
+  const [user, setUser] = useState<UserData | null>(() => {
+    const savedUser = localStorage.getItem(USER_KEY);
 
-      if (!savedUser) {
-        return null;
-      }
-
-      try {
-        return JSON.parse(savedUser);
-      } catch {
-        localStorage.removeItem(USER_KEY);
-        return null;
-      }
+    if (!savedUser) {
+      return null;
     }
-  );
+
+    try {
+      return JSON.parse(savedUser);
+    } catch {
+      localStorage.removeItem(USER_KEY);
+      return null;
+    }
+  });
 
   const login = useCallback(
     (newToken: string, newUser: UserData) => {
-      localStorage.setItem(
-        TOKEN_KEY,
-        newToken
-      );
-
+      localStorage.setItem(TOKEN_KEY, newToken);
       localStorage.setItem(
         USER_KEY,
         JSON.stringify(newUser)

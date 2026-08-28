@@ -1,74 +1,18 @@
-import {
-  IndianRupee,
-  TrendingUp,
-  ShoppingCart,
-  Wallet,
-} from "lucide-react";
+import { IndianRupee, ShoppingCart, CheckCircle2, Clock3 } from "lucide-react";
+import { useSalesReport } from "../../hooks/useReports";
 
 export default function ReportsStats() {
+  const { data, isLoading, isError } = useSalesReport();
   const stats = [
-    {
-      title: "Revenue",
-      value: "₹3,59,000",
-      icon: IndianRupee,
-      color: "bg-green-500",
-    },
-    {
-      title: "Profit",
-      value: "₹1,12,000",
-      icon: TrendingUp,
-      color: "bg-blue-500",
-    },
-    {
-      title: "Orders",
-      value: "1,245",
-      icon: ShoppingCart,
-      color: "bg-orange-500",
-    },
-    {
-      title: "Expenses",
-      value: "₹2,47,000",
-      icon: Wallet,
-      color: "bg-red-500",
-    },
+    { title: "Revenue", value: data?.total_sales ?? 0, icon: IndianRupee },
+    { title: "Orders", value: data?.total_orders ?? 0, icon: ShoppingCart },
+    { title: "Paid Orders", value: data?.paid_orders ?? 0, icon: CheckCircle2 },
+    { title: "Pending Orders", value: data?.pending_orders ?? 0, icon: Clock3 },
   ];
-
-  return (
-    <div className="grid gap-6 md:grid-cols-2 xl:grid-cols-4">
-
-      {stats.map((item) => {
-        const Icon = item.icon;
-
-        return (
-          <div
-            key={item.title}
-            className="rounded-2xl bg-white p-6 shadow"
-          >
-            <div className="flex items-center justify-between">
-
-              <div>
-
-                <p className="text-sm text-gray-500">
-                  {item.title}
-                </p>
-
-                <h2 className="mt-2 text-3xl font-bold">
-                  {item.value}
-                </h2>
-
-              </div>
-
-              <div
-                className={`rounded-xl p-3 text-white ${item.color}`}
-              >
-                <Icon size={26} />
-              </div>
-
-            </div>
-          </div>
-        );
-      })}
-
-    </div>
-  );
+  if (isError) return <div className="rounded-2xl border border-red-200 bg-white p-6 text-red-600">Unable to load report summary.</div>;
+  return <div className="grid gap-6 md:grid-cols-2 xl:grid-cols-4">
+    {stats.map(({ title, value, icon: Icon }) => <div key={title} className="rounded-2xl border border-border bg-surface p-6 shadow-sm">
+      <div className="flex items-center justify-between"><div><p className="text-sm text-text-secondary">{title}</p><h2 className="mt-2 text-3xl font-bold text-text-primary">{isLoading ? "—" : title === "Revenue" ? `₹${Number(value).toLocaleString("en-IN")}` : value}</h2></div><div className="rounded-xl bg-surface-2 p-3 text-text-primary"><Icon size={26}/></div></div>
+    </div>)}
+  </div>;
 }

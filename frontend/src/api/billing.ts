@@ -26,3 +26,34 @@ export const updateInvoiceStatus = async (
 
   return response.data;
 };
+
+export interface RazorpayOrder {
+  key_id: string;
+  order_id: string;
+  amount: number;
+  currency: string;
+  invoice_id: string;
+  customer: string;
+}
+
+export const createRazorpayOrder = async (invoiceId: string) => {
+  const response = await api.post<RazorpayOrder>(
+    `/api/billing/${invoiceId}/payment/order`
+  );
+  return response.data;
+};
+
+export const verifyRazorpayPayment = async (
+  invoiceId: string,
+  data: {
+    razorpay_order_id: string;
+    razorpay_payment_id: string;
+    razorpay_signature: string;
+  }
+) => {
+  const response = await api.post(
+    `/api/billing/${invoiceId}/payment/verify`,
+    data
+  );
+  return response.data;
+};

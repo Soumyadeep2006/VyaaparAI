@@ -1,7 +1,11 @@
 import { useState } from "react";
-import { Eye, X, CheckCircle2, Clock3, Ban } from "lucide-react";
+import { Eye, X, CheckCircle2, Clock3, Ban, CreditCard } from "lucide-react";
 import type { Invoice } from "../../types/invoice";
-import { updateInvoiceStatus } from "../../api/billing";
+import {
+  updateInvoiceStatus,
+  createRazorpayOrder,
+  verifyRazorpayPayment,
+} from "../../api/billing";
 
 interface InvoiceTableProps {
   invoices: Invoice[];
@@ -18,6 +22,7 @@ export default function InvoiceTable({
     useState<Invoice | null>(null);
 
   const [updating, setUpdating] = useState(false);
+  const [paying, setPaying] = useState(false);
 
   const getInvoiceId = (invoice: Invoice) => {
     return invoice.id || invoice._id || "";
@@ -58,6 +63,80 @@ export default function InvoiceTable({
     }
 
     return parsedDate.toLocaleDateString("en-IN");
+  };
+
+  const loadRazorpay = async () => {
+    if (window.Razorpay) return window.Razorpay;
+
+    await new Promise<void>((resolve, reject) => {
+      const existing = document.querySelector<HTMLScriptElement>(
+        'script[src="https://checkout.razorpay.com/v1/checkout.js"]'
+      );
+      if (existing) {
+        existing.addEventListener("load", () => resolve(), { once: true });
+        existing.addEventListener("error", () => reject(new Error("Unable to load Razorpay Checkout")), { once: true });
+        return;
+      }
+
+      const script = document.createElement("script");
+      script.src = "https://checkout.razorpay.com/v1/checkout.js";
+      script.async = true;
+      script.onload = () => resolve();
+      script.onerror = () => reject(new Error("Unable to load Razorpay Checkout"));
+      document.body.appendChild(script);
+    });
+
+    if (!window.Razorpay) throw new Error("Razorpay Checkout is unavailable");
+    return window.Razorpay;
+  };
+
+  const handleOnlinePayment = async () => {
+    if (!selectedInvoice || selectedInvoice.status !== "Pending") return;
+
+    const invoiceId = getInvoiceId(selectedInvoice);
+    if (!invoiceId) {
+      alert("Invoice ID not found.");
+      return;
+    }
+
+    try {
+      setPaying(true);
+      const order = await createRazorpayOrder(invoiceId);
+      const Razorpay = await loadRazorpay();
+
+      const checkout = new Razorpay({
+        key: order.key_id,
+        amount: order.amount,
+        currency: order.currency,
+        name: "VyaparAI",
+        description: `Payment for invoice ${invoiceId}`,
+        order_id: order.order_id,
+        prefill: { name: order.customer },
+        theme: { color: "#2B6F79" },
+        handler: async (response) => {
+          try {
+            const updatedInvoice = await verifyRazorpayPayment(invoiceId, response);
+            setSelectedInvoice(updatedInvoice);
+            onRefresh?.();
+            alert("Payment successful. Invoice is now Paid.");
+          } catch (error) {
+            console.error("Payment verification error:", error);
+            alert("Payment was received, but verification failed. Please check the invoice before retrying.");
+          } finally {
+            setPaying(false);
+          }
+        },
+        modal: {
+          ondismiss: () => setPaying(false),
+        },
+      });
+
+      checkout.open();
+    } catch (error) {
+      console.error("Online payment error:", error);
+      alert(error instanceof Error ? error.message : "Unable to start online payment.");
+      setPaying(false);
+    }
   };
 
   const handleStatusChange = async (
@@ -356,6 +435,18 @@ export default function InvoiceTable({
               </p>
 
             </div>
+
+            {selectedInvoice.status === "Pending" && (
+              <button
+                type="button"
+                disabled={paying || updating}
+                onClick={handleOnlinePayment}
+                className="mb-6 flex w-full items-center justify-center gap-2 rounded-xl bg-[#2B6F79] px-4 py-3 font-semibold text-white transition hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-60"
+              >
+                <CreditCard className="h-4 w-4" />
+                {paying ? "Opening secure payment..." : `Pay ₹${selectedInvoice.total.toLocaleString("en-IN")} Online`}
+              </button>
+            )}
 
             {/* PAYMENT STATUS */}
 

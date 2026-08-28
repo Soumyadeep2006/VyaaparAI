@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useQueryClient } from "@tanstack/react-query";
 
 import DashboardLayout from "../../components/layout/DashboardLayout";
 import BillingHeader from "../../components/billing/BillingHeader";
@@ -16,8 +17,11 @@ interface InvoiceItem {
 
 interface InvoiceData {
   customer: string;
-  items: InvoiceItem[];
+  customer_id: string;
+  items: (InvoiceItem & { product_id: string })[];
   total: number;
+  status: "Pending" | "Paid" | "Cancelled";
+  payment_method: "Cash" | "UPI" | "Card" | "Bank Transfer";
 }
 
 export default function BillingPage() {
@@ -27,12 +31,23 @@ export default function BillingPage() {
   } = useBilling();
 
   const [showForm, setShowForm] = useState(false);
+  const queryClient = useQueryClient();
+
+  const refreshBillingData = async () => {
+    await refetch();
+    await Promise.all([
+      queryClient.invalidateQueries({ queryKey: ["customers"] }),
+      queryClient.invalidateQueries({ queryKey: ["inventory"] }),
+      queryClient.invalidateQueries({ queryKey: ["dashboard"] }),
+      queryClient.invalidateQueries({ queryKey: ["reports"] }),
+    ]);
+  };
 
   const handleSaveInvoice = async (data: InvoiceData) => {
     try {
       await createInvoice(data);
 
-      await refetch();
+      await refreshBillingData();
 
       setShowForm(false);
     } catch (error) {
@@ -52,7 +67,7 @@ export default function BillingPage() {
         {/* Invoice List */}
         <InvoiceTable
           invoices={invoices}
-          onRefresh={refetch}
+          onRefresh={refreshBillingData}
         />
 
         {/* Create Invoice Modal */}

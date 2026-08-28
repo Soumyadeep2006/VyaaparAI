@@ -1,10 +1,10 @@
-import type { ReactNode } from "react";
-
 import {
-  Routes,
-  Route,
-  Navigate,
+Routes,
+Route,
+Navigate,
 } from "react-router-dom";
+
+import { useAuth } from "./context/AuthContext";
 
 import DashboardPage from "./pages/dashboard/DashboardPage";
 import InventoryPage from "./pages/inventory/InventoryPage";
@@ -20,144 +20,146 @@ import RegisterPage from "./pages/auth/RegisterPage";
 import ForgotPasswordPage from "./pages/auth/ForgotPasswordPage";
 import ResetPasswordPage from "./pages/auth/ResetPasswordPage";
 
-import ProtectedRoute from "./components/auth/ProtectedRoute";
+import NotFoundPage from "./pages/NotFoundPage";
 
-function Protected({
-  children,
+function ProtectedRoute({
+children,
 }: {
-  children: ReactNode;
+children: React.ReactNode;
 }) {
-  return (
-    <ProtectedRoute>
-      {children}
-    </ProtectedRoute>
-  );
+const { isAuthenticated } = useAuth();
+
+if (!isAuthenticated) {
+return <Navigate to="/login" replace />;
+}
+
+return <>{children}</>;
 }
 
 export default function App() {
-  return (
-    <Routes>
+return ( <Routes>
 
-      {/* ================= AUTH ================= */}
+```
+  {/* ================= AUTH ================= */}
 
-      <Route
-        path="/login"
-        element={<LoginPage />}
+  <Route
+    path="/login"
+    element={<LoginPage />}
+  />
+
+  <Route
+    path="/register"
+    element={<RegisterPage />}
+  />
+
+  <Route
+    path="/forgot-password"
+    element={<ForgotPasswordPage />}
+  />
+
+  <Route
+    path="/reset-password"
+    element={<ResetPasswordPage />}
+  />
+
+
+  {/* ================= DEFAULT ================= */}
+
+  <Route
+    path="/"
+    element={
+      <Navigate
+        to="/dashboard"
+        replace
       />
+    }
+  />
 
-      <Route
-        path="/register"
-        element={<RegisterPage />}
-      />
 
-      <Route
-        path="/forgot-password"
-        element={<ForgotPasswordPage />}
-      />
+  {/* ================= PROTECTED ================= */}
 
-      <Route
-        path="/reset-password"
-        element={<ResetPasswordPage />}
-      />
+  <Route
+    path="/dashboard"
+    element={
+      <ProtectedRoute>
+        <DashboardPage />
+      </ProtectedRoute>
+    }
+  />
 
-      {/* ================= DEFAULT ================= */}
+  <Route
+    path="/inventory"
+    element={
+      <ProtectedRoute>
+        <InventoryPage />
+      </ProtectedRoute>
+    }
+  />
 
-      <Route
-        path="/"
-        element={
-          <Navigate
-            to="/dashboard"
-            replace
-          />
-        }
-      />
+  <Route
+    path="/billing"
+    element={
+      <ProtectedRoute>
+        <BillingPage />
+      </ProtectedRoute>
+    }
+  />
 
-      {/* ================= PROTECTED ================= */}
+  <Route
+    path="/customers"
+    element={
+      <ProtectedRoute>
+        <CustomersPage />
+      </ProtectedRoute>
+    }
+  />
 
-      <Route
-        path="/dashboard"
-        element={
-          <Protected>
-            <DashboardPage />
-          </Protected>
-        }
-      />
+  <Route
+    path="/suppliers"
+    element={
+      <ProtectedRoute>
+        <SuppliersPage />
+      </ProtectedRoute>
+    }
+  />
 
-      <Route
-        path="/inventory"
-        element={
-          <Protected>
-            <InventoryPage />
-          </Protected>
-        }
-      />
+  <Route
+    path="/reports"
+    element={
+      <ProtectedRoute>
+        <ReportsPage />
+      </ProtectedRoute>
+    }
+  />
 
-      <Route
-        path="/billing"
-        element={
-          <Protected>
-            <BillingPage />
-          </Protected>
-        }
-      />
+  <Route
+    path="/ai"
+    element={
+      <ProtectedRoute>
+        <AIPage />
+      </ProtectedRoute>
+    }
+  />
 
-      <Route
-        path="/customers"
-        element={
-          <Protected>
-            <CustomersPage />
-          </Protected>
-        }
-      />
+  <Route
+    path="/settings"
+    element={
+      <ProtectedRoute>
+        <SettingsPage />
+      </ProtectedRoute>
+    }
+  />
 
-      <Route
-        path="/suppliers"
-        element={
-          <Protected>
-            <SuppliersPage />
-          </Protected>
-        }
-      />
 
-      <Route
-        path="/reports"
-        element={
-          <Protected>
-            <ReportsPage />
-          </Protected>
-        }
-      />
+  {/* ================= 404 ================= */}
 
-      <Route
-        path="/ai"
-        element={
-          <Protected>
-            <AIPage />
-          </Protected>
-        }
-      />
+  <Route
+    path="*"
+    element={<NotFoundPage />}
+  />
 
-      <Route
-        path="/settings"
-        element={
-          <Protected>
-            <SettingsPage />
-          </Protected>
-        }
-      />
+</Routes>
 
-      {/* ================= FALLBACK ================= */}
 
-      <Route
-        path="*"
-        element={
-          <Navigate
-            to="/dashboard"
-            replace
-          />
-        }
-      />
-
-    </Routes>
-  );
+);
 }

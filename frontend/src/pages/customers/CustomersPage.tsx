@@ -43,7 +43,7 @@ export default function CustomersPage() {
     return customers.filter((customer) =>
       customer.name.toLowerCase().includes(query) ||
       customer.phone.includes(query) ||
-      customer.email.toLowerCase().includes(query)
+      (customer.email ?? "").toLowerCase().includes(query)
     );
   }, [customers, search]);
 

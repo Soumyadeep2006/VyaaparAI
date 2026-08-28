@@ -23,3 +23,6 @@ Thumbs.db
 .pytest_cache/
 .coverage
 htmlcov/
+
+# Local database utility scripts
+fix_password.py
