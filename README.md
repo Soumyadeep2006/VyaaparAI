@@ -618,7 +618,7 @@ Consider giving the repository a ⭐ on GitHub.
 https://vyapar-ai-ruby.vercel.app
 
 **Source Code:**
-https://github.com/algorhythm11/VyaparAI
+https://github.com/Soumyadeep2006/VyaaparAI
 
 **Demo Video:**
 https://drive.google.com/file/d/1rnQ-TNym-MmbRZ4lcdKOsKRrWaX_RRQ4/view?usp=drivesdk
