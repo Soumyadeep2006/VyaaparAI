@@ -9,7 +9,8 @@ import {
 
 export interface UserData {
   name: string;
-  email: string;
+  email?: string | null;
+  phone?: string | null;
 }
 
 interface AuthContextValue {

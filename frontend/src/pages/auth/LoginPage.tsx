@@ -1,20 +1,131 @@
-import { useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import {
   Eye,
   EyeOff,
   Mail,
   Lock,
   Phone,
-  Globe,
-  ArrowRight,
   ShieldCheck,
+  ArrowRight,
 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 
-import { loginUser } from "../../api/auth";
+import {
+  loginUser,
+  loginWithGoogle,
+  sendPhoneOTP,
+  verifyPhoneOTP,
+} from "../../api/auth";
 import { useAuth } from "../../context/AuthContext";
 
+
 type LoginMode = "email" | "phone";
+
+const GOOGLE_CLIENT_ID = import.meta.env.VITE_GOOGLE_CLIENT_ID;
+
+function GoogleLoginButton({
+  onSuccess,
+  onError,
+}: {
+  onSuccess: (credential: string) => Promise<void>;
+  onError: (message: string) => void;
+}) {
+  const containerRef = useRef<HTMLDivElement | null>(null);
+
+  useEffect(() => {
+    if (!GOOGLE_CLIENT_ID || !containerRef.current) {
+      return;
+    }
+
+    let cancelled = false;
+
+    const renderGoogleButton = () => {
+      if (
+        cancelled ||
+        !containerRef.current ||
+        !window.google
+      ) {
+        return;
+      }
+
+      containerRef.current.innerHTML = "";
+
+      window.google.accounts.id.initialize({
+        client_id: GOOGLE_CLIENT_ID,
+        callback: (response) => {
+          void onSuccess(response.credential);
+        },
+      });
+
+      window.google.accounts.id.renderButton(
+        containerRef.current,
+        {
+          type: "standard",
+          theme: "outline",
+          size: "large",
+          text: "continue_with",
+          shape: "rectangular",
+          width: 420,
+        }
+      );
+    };
+
+    if (window.google) {
+      renderGoogleButton();
+      return () => {
+        cancelled = true;
+      };
+    }
+
+    const existingScript = document.querySelector(
+      'script[src="https://accounts.google.com/gsi/client"]'
+    ) as HTMLScriptElement | null;
+
+    if (existingScript) {
+      existingScript.addEventListener(
+        "load",
+        renderGoogleButton,
+        { once: true }
+      );
+    } else {
+      const script = document.createElement("script");
+      script.src = "https://accounts.google.com/gsi/client";
+      script.async = true;
+      script.defer = true;
+      script.onload = renderGoogleButton;
+      script.onerror = () => {
+        onError("Unable to load Google Sign-In.");
+      };
+      document.head.appendChild(script);
+    }
+
+    return () => {
+      cancelled = true;
+    };
+  }, [onError, onSuccess]);
+
+  if (!GOOGLE_CLIENT_ID) {
+    return (
+      <button
+        type="button"
+        onClick={() =>
+          onError(
+            "Google login is not configured yet. Add VITE_GOOGLE_CLIENT_ID to frontend/.env.local."
+          )
+        }
+        className="mt-5 flex w-full items-center justify-center rounded-xl border border-border bg-surface py-3 font-medium transition hover:bg-surface-2"
+      >
+        Continue with Google
+      </button>
+    );
+  }
+
+  return (
+    <div className="mt-5 flex min-h-11 w-full justify-center overflow-hidden rounded-xl">
+      <div ref={containerRef} />
+    </div>
+  );
+}
 
 export default function LoginPage() {
   const navigate = useNavigate();
@@ -32,6 +143,14 @@ export default function LoginPage() {
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+
+  const finishLogin = (
+    accessToken: string,
+    user: Parameters<typeof login>[1]
+  ) => {
+    login(accessToken, user);
+    navigate("/dashboard", { replace: true });
+  };
 
   const handleEmailLogin = async (
     event: React.FormEvent<HTMLFormElement>
@@ -55,13 +174,10 @@ export default function LoginPage() {
         password,
       });
 
-      // Save authentication data
-      login(response.access_token, response.user);
-
-      // Go to dashboard
-      navigate("/dashboard", {
-        replace: true,
-      });
+      finishLogin(
+        response.access_token,
+        response.user
+      );
     } catch (err: any) {
       const status = err?.response?.status;
       const backendMessage = err?.response?.data?.detail;
@@ -83,6 +199,41 @@ export default function LoginPage() {
     }
   };
 
+  const handleGoogleLogin = useCallback(async (credential: string) => {
+    setError("");
+
+    try {
+      setLoading(true);
+
+      const response = await loginWithGoogle(
+        credential
+      );
+
+      finishLogin(
+        response.access_token,
+        response.user
+      );
+    } catch (err: any) {
+      const status = err?.response?.status;
+      const backendMessage = err?.response?.data?.detail;
+
+      if (status === 503) {
+        setError(
+          "Google login is not configured on the backend yet."
+        );
+      } else if (status === 401) {
+        setError("Google verification failed. Please try again.");
+      } else {
+        setError(
+          backendMessage ||
+            "Unable to sign in with Google. Please try again."
+        );
+      }
+    } finally {
+      setLoading(false);
+    }
+  }, [login, navigate]);
+
   const handleSendOTP = async () => {
     setError("");
 
@@ -91,8 +242,29 @@ export default function LoginPage() {
       return;
     }
 
-    // Phone OTP backend is not connected yet.
-    setOtpSent(true);
+    try {
+      setLoading(true);
+
+      await sendPhoneOTP(phone);
+      setOtpSent(true);
+      setOtp("");
+    } catch (err: any) {
+      const status = err?.response?.status;
+      const backendMessage = err?.response?.data?.detail;
+
+      if (status === 503) {
+        setError(
+          "Phone OTP is not configured on the backend yet."
+        );
+      } else {
+        setError(
+          backendMessage ||
+            "Unable to send OTP. Please check the phone number and try again."
+        );
+      }
+    } finally {
+      setLoading(false);
+    }
   };
 
   const handleVerifyOTP = async (
@@ -107,7 +279,37 @@ export default function LoginPage() {
       return;
     }
 
-    setError("Phone OTP backend is not connected yet.");
+    try {
+      setLoading(true);
+
+      const response = await verifyPhoneOTP(
+        phone,
+        otp.trim()
+      );
+
+      finishLogin(
+        response.access_token,
+        response.user
+      );
+    } catch (err: any) {
+      const status = err?.response?.status;
+      const backendMessage = err?.response?.data?.detail;
+
+      if (status === 401) {
+        setError("Invalid or expired OTP.");
+      } else if (status === 503) {
+        setError(
+          "Phone OTP is not configured on the backend yet."
+        );
+      } else {
+        setError(
+          backendMessage ||
+            "Unable to verify OTP. Please try again."
+        );
+      }
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -196,6 +398,7 @@ export default function LoginPage() {
                 type="button"
                 onClick={() => {
                   setMode("email");
+                  setOtpSent(false);
                   setError("");
                 }}
                 className={`rounded-lg py-2.5 text-sm font-medium transition ${
@@ -225,18 +428,10 @@ export default function LoginPage() {
             </div>
 
             {/* GOOGLE */}
-            <button
-              type="button"
-              onClick={() =>
-                setError(
-                  "Google login will be connected after OAuth setup."
-                )
-              }
-              className="mt-5 flex w-full items-center justify-center gap-3 rounded-xl border border-border bg-surface py-3 font-medium transition hover:bg-surface-2"
-            >
-              <Globe size={19} />
-              Continue with Google
-            </button>
+            <GoogleLoginButton
+              onSuccess={handleGoogleLogin}
+              onError={setError}
+            />
 
             {/* DIVIDER */}
             <div className="my-6 flex items-center gap-4">
@@ -253,6 +448,13 @@ export default function LoginPage() {
             {error && (
               <div className="mb-5 rounded-xl border border-red-500/20 bg-red-500/10 px-4 py-3 text-sm text-red-600 dark:text-red-400">
                 {error}
+              </div>
+            )}
+
+            {/* LOADING */}
+            {loading && (
+              <div className="mb-5 text-center text-sm text-text-secondary">
+                Please wait...
               </div>
             )}
 
@@ -284,6 +486,7 @@ export default function LoginPage() {
                       }}
                       placeholder="you@example.com"
                       autoComplete="email"
+                      disabled={loading}
                       className="w-full rounded-xl border border-border bg-surface py-3 pl-10 pr-4 outline-none transition focus:border-primary focus:ring-2 focus:ring-primary/20"
                     />
                   </div>
@@ -326,6 +529,7 @@ export default function LoginPage() {
                       }}
                       placeholder="Enter password"
                       autoComplete="current-password"
+                      disabled={loading}
                       className="w-full rounded-xl border border-border bg-surface py-3 pl-10 pr-11 outline-none transition focus:border-primary focus:ring-2 focus:ring-primary/20"
                     />
 
@@ -337,11 +541,9 @@ export default function LoginPage() {
                           : "Show password"
                       }
                       onClick={() =>
-                        setShowPassword(
-                          (previous) => !previous
-                        )
+                        setShowPassword((value) => !value)
                       }
-                      className="absolute right-3 top-1/2 -translate-y-1/2 text-text-secondary hover:text-primary"
+                      className="absolute right-3 top-1/2 -translate-y-1/2 text-text-secondary hover:text-text-primary"
                     >
                       {showPassword ? (
                         <EyeOff size={18} />
@@ -352,13 +554,12 @@ export default function LoginPage() {
                   </div>
                 </div>
 
-                {/* SIGN IN */}
                 <button
                   type="submit"
                   disabled={loading}
                   className="flex w-full items-center justify-center gap-2 rounded-xl bg-primary py-3.5 font-semibold text-white transition hover:bg-primary-dark disabled:cursor-not-allowed disabled:opacity-60"
                 >
-                  {loading ? "Signing in..." : "Sign in"}
+                  {loading ? "Signing in..." : "Login"}
 
                   {!loading && (
                     <ArrowRight size={18} />
@@ -389,48 +590,71 @@ export default function LoginPage() {
                     <input
                       type="tel"
                       value={phone}
-                      onChange={(e) =>
-                        setPhone(e.target.value)
-                      }
+                      onChange={(e) => {
+                        setPhone(e.target.value);
+                        setError("");
+                      }}
                       placeholder="+91 9876543210"
                       autoComplete="tel"
+                      disabled={loading}
                       className="w-full rounded-xl border border-border bg-surface py-3 pl-10 pr-4 outline-none focus:border-primary focus:ring-2 focus:ring-primary/20"
                     />
                   </div>
+
+                  <p className="mt-2 text-xs text-text-secondary">
+                    Use +country code, or a 10-digit Indian mobile number.
+                  </p>
                 </div>
 
                 {!otpSent ? (
                   <button
                     type="button"
                     onClick={handleSendOTP}
-                    className="w-full rounded-xl bg-primary py-3.5 font-semibold text-white hover:bg-primary-dark"
+                    disabled={loading}
+                    className="w-full rounded-xl bg-primary py-3.5 font-semibold text-white transition hover:bg-primary-dark disabled:cursor-not-allowed disabled:opacity-60"
                   >
-                    Send OTP
+                    {loading ? "Sending OTP..." : "Send OTP"}
                   </button>
                 ) : (
                   <>
                     <div>
-                      <label className="mb-2 block text-sm font-medium">
-                        Enter OTP
-                      </label>
+                      <div className="mb-2 flex items-center justify-between">
+                        <label className="block text-sm font-medium">
+                          Enter OTP
+                        </label>
+
+                        <button
+                          type="button"
+                          onClick={handleSendOTP}
+                          disabled={loading}
+                          className="text-sm font-medium text-primary hover:underline disabled:opacity-50"
+                        >
+                          Resend OTP
+                        </button>
+                      </div>
 
                       <input
                         value={otp}
                         onChange={(e) =>
-                          setOtp(e.target.value)
+                          setOtp(
+                            e.target.value.replace(/\D/g, "")
+                          )
                         }
-                        maxLength={6}
+                        maxLength={10}
                         inputMode="numeric"
-                        placeholder="6-digit OTP"
+                        autoComplete="one-time-code"
+                        placeholder="Enter OTP"
+                        disabled={loading}
                         className="w-full rounded-xl border border-border bg-surface px-4 py-3 text-center tracking-[0.5em] outline-none focus:border-primary focus:ring-2 focus:ring-primary/20"
                       />
                     </div>
 
                     <button
                       type="submit"
-                      className="w-full rounded-xl bg-primary py-3.5 font-semibold text-white hover:bg-primary-dark"
+                      disabled={loading}
+                      className="w-full rounded-xl bg-primary py-3.5 font-semibold text-white transition hover:bg-primary-dark disabled:cursor-not-allowed disabled:opacity-60"
                     >
-                      Verify OTP
+                      {loading ? "Verifying..." : "Verify OTP"}
                     </button>
                   </>
                 )}

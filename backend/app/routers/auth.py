@@ -3,6 +3,9 @@ from fastapi import APIRouter, HTTPException
 from app.schemas.user import (
     RegisterSchema,
     LoginSchema,
+    GoogleLoginSchema,
+    PhoneOTPSendSchema,
+    PhoneOTPVerifySchema,
     TokenSchema,
     ForgotPasswordSchema,
     ResetPasswordSchema,
@@ -11,6 +14,9 @@ from app.schemas.user import (
 from app.services.auth import (
     register_user,
     login_user,
+    login_with_google,
+    send_phone_otp,
+    verify_phone_otp,
     create_reset_token,
     reset_user_password,
 )
@@ -72,10 +78,96 @@ async def login(
     return {
         "access_token": result["token"],
         "token_type": "bearer",
-        "user": {
-            "name": result["user"]["name"],
-            "email": result["user"]["email"],
-        },
+        "user": result["user"],
+    }
+
+
+@router.post(
+    "/google",
+    response_model=TokenSchema,
+)
+async def google_login(
+    data: GoogleLoginSchema,
+):
+    try:
+        result = await login_with_google(
+            data.credential
+        )
+    except RuntimeError as exc:
+        raise HTTPException(
+            status_code=503,
+            detail=str(exc),
+        ) from exc
+
+    if not result:
+        raise HTTPException(
+            status_code=401,
+            detail="Unable to verify Google account",
+        )
+
+    return {
+        "access_token": result["token"],
+        "token_type": "bearer",
+        "user": result["user"],
+    }
+
+
+@router.post("/phone/send-otp")
+async def phone_send_otp(
+    data: PhoneOTPSendSchema,
+):
+    try:
+        phone = await send_phone_otp(data.phone)
+    except ValueError as exc:
+        raise HTTPException(
+            status_code=400,
+            detail=str(exc),
+        ) from exc
+    except RuntimeError as exc:
+        raise HTTPException(
+            status_code=503,
+            detail=str(exc),
+        ) from exc
+
+    return {
+        "message": "OTP sent successfully",
+        "phone": phone,
+    }
+
+
+@router.post(
+    "/phone/verify-otp",
+    response_model=TokenSchema,
+)
+async def phone_verify_otp(
+    data: PhoneOTPVerifySchema,
+):
+    try:
+        result = await verify_phone_otp(
+            data.phone,
+            data.otp,
+        )
+    except ValueError as exc:
+        raise HTTPException(
+            status_code=400,
+            detail=str(exc),
+        ) from exc
+    except RuntimeError as exc:
+        raise HTTPException(
+            status_code=503,
+            detail=str(exc),
+        ) from exc
+
+    if not result:
+        raise HTTPException(
+            status_code=401,
+            detail="Invalid or expired OTP",
+        )
+
+    return {
+        "access_token": result["token"],
+        "token_type": "bearer",
+        "user": result["user"],
     }
 
 

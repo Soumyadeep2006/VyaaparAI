@@ -3,7 +3,8 @@ const USER_KEY = "vyaparai_user";
 
 export interface AuthUser {
   name: string;
-  email: string;
+  email?: string | null;
+  phone?: string | null;
 }
 
 export function saveToken(token: string) {

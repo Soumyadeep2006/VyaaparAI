@@ -25,6 +25,13 @@ class Settings:
     RAZORPAY_KEY_ID = os.getenv("RAZORPAY_KEY_ID", "")
     RAZORPAY_KEY_SECRET = os.getenv("RAZORPAY_KEY_SECRET", "")
 
+    # Google Sign-In
+    GOOGLE_CLIENT_ID = os.getenv("GOOGLE_CLIENT_ID", "")
+
+    # Phone OTP (MSG91)
+    MSG91_AUTH_KEY = os.getenv("MSG91_AUTH_KEY", "")
+    MSG91_TEMPLATE_ID = os.getenv("MSG91_TEMPLATE_ID", "")
+
     JWT_SECRET_KEY = os.getenv(
         "JWT_SECRET_KEY",
         "change-this-secret-key"

@@ -13,7 +13,8 @@ export interface LoginData {
 
 export interface UserData {
   name: string;
-  email: string;
+  email?: string | null;
+  phone?: string | null;
 }
 
 export interface AuthResponse {
@@ -34,13 +35,53 @@ export const registerUser = async (
   return response.data;
 };
 
-// Login
+// Email + password login
 export const loginUser = async (
   data: LoginData
 ): Promise<AuthResponse> => {
   const response = await api.post<AuthResponse>(
     "/api/auth/login",
     data
+  );
+
+  return response.data;
+};
+
+// Google Sign-In
+export const loginWithGoogle = async (
+  credential: string
+): Promise<AuthResponse> => {
+  const response = await api.post<AuthResponse>(
+    "/api/auth/google",
+    { credential }
+  );
+
+  return response.data;
+};
+
+// Phone OTP - send
+export const sendPhoneOTP = async (
+  phone: string
+) => {
+  const response = await api.post(
+    "/api/auth/phone/send-otp",
+    { phone }
+  );
+
+  return response.data as {
+    message: string;
+    phone: string;
+  };
+};
+
+// Phone OTP - verify
+export const verifyPhoneOTP = async (
+  phone: string,
+  otp: string
+): Promise<AuthResponse> => {
+  const response = await api.post<AuthResponse>(
+    "/api/auth/phone/verify-otp",
+    { phone, otp }
   );
 
   return response.data;
