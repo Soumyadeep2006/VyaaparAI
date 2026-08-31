@@ -26,6 +26,7 @@ app.add_middleware(
         "http://localhost:5173",
         "http://127.0.0.1:5173",
         "https://vyapar-ai-tzzv.vercel.app",
+        "https://vyaaparai-zsc7.onrender.com"
     ],
     allow_origin_regex=r"https://vyapar-ai-tzzv-[a-z0-9]+-mrking7979s-projects\.vercel\.app",
     allow_credentials=True,
