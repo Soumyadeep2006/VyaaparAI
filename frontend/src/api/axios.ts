@@ -1,10 +1,11 @@
 import axios from "axios";
 
-const API = axios.create({
-  baseURL:
-    import.meta.env.VITE_API_URL ||
-    "https://vyaparai-backend-vdko.onrender.com",
+const API_BASE_URL = import.meta.env.DEV
+  ? "http://localhost:8000"
+  : "/";
 
+const API = axios.create({
+  baseURL: API_BASE_URL,
   headers: {
     "Content-Type": "application/json",
   },
@@ -27,7 +28,6 @@ API.interceptors.request.use(
 // Handle authentication errors
 API.interceptors.response.use(
   (response) => response,
-
   (error) => {
     if (error.response?.status === 401) {
       localStorage.removeItem("vyaparai_token");

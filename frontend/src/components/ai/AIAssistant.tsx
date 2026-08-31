@@ -22,6 +22,80 @@ const suggestions = [
   "Predict next month's revenue",
 ];
 
+function renderInlineMarkdown(text: string) {
+  const parts = text.split(/(\*\*[^*]+\*\*|__[^_]+__|`[^`]+`|\*[^*]+\*|_[^_]+_)/g);
+
+  return parts.map((part, index) => {
+    if (!part) return null;
+
+    if ((part.startsWith("**") && part.endsWith("**")) ||
+        (part.startsWith("__") && part.endsWith("__"))) {
+      return <strong key={index} className="font-bold">{part.slice(2, -2)}</strong>;
+    }
+
+    if (part.startsWith("`") && part.endsWith("`")) {
+      return (
+        <code key={index} className="rounded bg-black/10 px-1.5 py-0.5 font-mono text-xs">
+          {part.slice(1, -1)}
+        </code>
+      );
+    }
+
+    if ((part.startsWith("*") && part.endsWith("*")) ||
+        (part.startsWith("_") && part.endsWith("_"))) {
+      return <em key={index}>{part.slice(1, -1)}</em>;
+    }
+
+    return <span key={index}>{part}</span>;
+  });
+}
+
+function renderMarkdown(text: string) {
+  return text.replace(/\r\n/g, "\n").split("\n").map((line, index) => {
+    const trimmed = line.trim();
+
+    if (!trimmed) return <div key={index} className="h-2" />;
+
+    if (trimmed.startsWith("### ")) {
+      return <h3 key={index} className="mb-1 mt-2 font-bold">{renderInlineMarkdown(trimmed.slice(4))}</h3>;
+    }
+
+    if (trimmed.startsWith("## ")) {
+      return <h2 key={index} className="mb-1 mt-2 text-base font-bold">{renderInlineMarkdown(trimmed.slice(3))}</h2>;
+    }
+
+    if (trimmed.startsWith("# ")) {
+      return <h1 key={index} className="mb-2 text-lg font-bold">{renderInlineMarkdown(trimmed.slice(2))}</h1>;
+    }
+
+    if (trimmed === "---" || trimmed === "***" || trimmed === "___") {
+      return <hr key={index} className="my-2 border-border" />;
+    }
+
+    const bullet = trimmed.match(/^[-*•]\s+(.*)$/);
+    if (bullet) {
+      return (
+        <div key={index} className="flex gap-2 leading-6">
+          <span className="shrink-0">•</span>
+          <span>{renderInlineMarkdown(bullet[1])}</span>
+        </div>
+      );
+    }
+
+    const numbered = trimmed.match(/^(\d+)\.\s+(.*)$/);
+    if (numbered) {
+      return (
+        <div key={index} className="flex gap-2 leading-6">
+          <span className="shrink-0 font-medium">{numbered[1]}.</span>
+          <span>{renderInlineMarkdown(numbered[2])}</span>
+        </div>
+      );
+    }
+
+    return <p key={index} className="mb-1 leading-6 last:mb-0">{renderInlineMarkdown(trimmed)}</p>;
+  });
+}
+
 export default function AIAssistant() {
   const [messages, setMessages] = useState<Message[]>([
     {
@@ -205,9 +279,13 @@ export default function AIAssistant() {
                       />
                     )}
 
-                    <p className="whitespace-pre-wrap text-sm leading-6">
-                      {message.text}
-                    </p>
+                    <div className="text-sm leading-6">
+                      {message.role === "assistant" ? (
+                        renderMarkdown(message.text)
+                      ) : (
+                        <p className="whitespace-pre-wrap">{message.text}</p>
+                      )}
+                    </div>
                   </div>
                 </div>
               ))}

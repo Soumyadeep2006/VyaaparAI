@@ -39,14 +39,17 @@ def _serialize_for_ai(value):
 
 
 async def _build_business_context(user_email: str) -> dict:
-    """Build a compact business snapshot for the authenticated owner."""
+    """Build a business snapshot for the authenticated owner."""
+
     now = datetime.now(timezone.utc)
+
     start_of_day = now.replace(
         hour=0,
         minute=0,
         second=0,
         microsecond=0,
     )
+
     start_of_month = now.replace(
         day=1,
         hour=0,
@@ -54,6 +57,10 @@ async def _build_business_context(user_email: str) -> dict:
         second=0,
         microsecond=0,
     )
+
+    # ============================================================
+    # INVOICES
+    # ============================================================
 
     invoices = []
 
@@ -66,6 +73,10 @@ async def _build_business_context(user_email: str) -> dict:
     async for invoice in cursor:
         invoices.append(invoice)
 
+    # ============================================================
+    # PRODUCTS
+    # ============================================================
+
     products = []
 
     product_cursor = db.products.find(
@@ -77,6 +88,10 @@ async def _build_business_context(user_email: str) -> dict:
     async for product in product_cursor:
         products.append(product)
 
+    # ============================================================
+    # CUSTOMERS
+    # ============================================================
+
     customers = []
 
     customer_cursor = db.customers.find(
@@ -87,6 +102,10 @@ async def _build_business_context(user_email: str) -> dict:
 
     async for customer in customer_cursor:
         customers.append(customer)
+
+    # ============================================================
+    # SALES CALCULATIONS
+    # ============================================================
 
     active_statuses = {"Pending", "Paid"}
 
@@ -112,14 +131,24 @@ async def _build_business_context(user_email: str) -> dict:
             month_invoices.append(invoice)
 
     today_sales = round(
-        sum(float(invoice.get("total", 0) or 0) for invoice in today_invoices),
+        sum(
+            float(invoice.get("total", 0) or 0)
+            for invoice in today_invoices
+        ),
         2,
     )
 
     month_revenue = round(
-        sum(float(invoice.get("total", 0) or 0) for invoice in month_invoices),
+        sum(
+            float(invoice.get("total", 0) or 0)
+            for invoice in month_invoices
+        ),
         2,
     )
+
+    # ============================================================
+    # INVOICE STATUS
+    # ============================================================
 
     pending_invoices = [
         invoice
@@ -139,6 +168,10 @@ async def _build_business_context(user_email: str) -> dict:
         if invoice.get("status") == "Cancelled"
     ]
 
+    # ============================================================
+    # CUSTOMER OUTSTANDING
+    # ============================================================
+
     outstanding = round(
         sum(
             float(customer.get("outstanding", 0) or 0)
@@ -146,6 +179,10 @@ async def _build_business_context(user_email: str) -> dict:
         ),
         2,
     )
+
+    # ============================================================
+    # LOW STOCK
+    # ============================================================
 
     low_stock_products = [
         {
@@ -156,6 +193,23 @@ async def _build_business_context(user_email: str) -> dict:
         for product in products
         if int(product.get("quantity", 0) or 0) < 10
     ]
+
+    # ============================================================
+    # COMPLETE CUSTOMER DATA
+    #
+    # IMPORTANT:
+    # Keep every available customer field.
+    # _serialize_for_ai() removes only MongoDB _id.
+    # ============================================================
+
+    customer_details = [
+        _serialize_for_ai(customer)
+        for customer in customers
+    ]
+
+    # ============================================================
+    # TOP CUSTOMERS
+    # ============================================================
 
     customer_summary = [
         {
@@ -180,6 +234,10 @@ async def _build_business_context(user_email: str) -> dict:
         reverse=True,
     )[:10]
 
+    # ============================================================
+    # RECENT INVOICES
+    # ============================================================
+
     recent_invoices = [
         {
             "customer": invoice.get("customer", ""),
@@ -191,52 +249,46 @@ async def _build_business_context(user_email: str) -> dict:
         for invoice in invoices[:10]
     ]
 
+    # ============================================================
+    # FINAL BUSINESS CONTEXT
+    # ============================================================
+
     return _serialize_for_ai(
         {
             "current_time_utc": now,
+
+            # Sales
             "today_sales": today_sales,
             "today_invoice_count": len(today_invoices),
             "month_revenue": month_revenue,
             "month_invoice_count": len(month_invoices),
+
+            # Invoice statistics
             "total_invoice_count": len(invoices),
             "paid_invoice_count": len(paid_invoices),
             "pending_invoice_count": len(pending_invoices),
             "cancelled_invoice_count": len(cancelled_invoices),
+
+            # Business counts
             "customer_count": len(customers),
             "product_count": len(products),
+
+            # Customer financial summary
             "outstanding_customer_amount": outstanding,
+
+            # Products
             "low_stock_products": low_stock_products,
+
+            # Customer ranking
             "top_customers": top_customers,
+
+            # COMPLETE CUSTOMER RECORDS
+            "customer_details": customer_details,
+
+            # Recent invoices
             "recent_invoices": recent_invoices,
         }
     )
-
-
-
-def _clean_ai_response(text: str) -> str:
-    """Remove common Markdown markers for the existing plain-text chat UI."""
-    import re
-
-    text = str(text or "").replace("\r\n", "\n").replace("\r", "\n")
-    text = re.sub(r"```(?:\w+)?\s*", "", text)
-    text = text.replace("```", "")
-
-    cleaned_lines = []
-    for line in text.split("\n"):
-        stripped = line.lstrip()
-
-        if stripped.startswith(("* ", "- ", "+ ")):
-            indent = line[: len(line) - len(stripped)]
-            line = f"{indent}• {stripped[2:]}"
-
-        line = re.sub(r"^\s*#{1,6}\s+", "", line)
-        line = line.replace("**", "").replace("__", "")
-        line = re.sub(r"(?<!\w)\*([^*\n]+)\*(?!\w)", r"\1", line)
-        line = re.sub(r"(?<!\w)_([^_\n]+)_(?!\w)", r"\1", line)
-
-        cleaned_lines.append(line)
-
-    return "\n".join(cleaned_lines).strip()
 
 
 async def ask_ai(prompt: str, user_email: str):
@@ -250,28 +302,75 @@ You are answering questions using the authenticated user's VyaaparAI
 business data supplied below.
 
 IMPORTANT RULES:
+
 1. Treat the supplied business context as the source of truth for business
-   figures.
+   figures and customer information.
+
 2. Never claim that you cannot access the user's VyaaparAI business data
    when the requested information is present in the context.
-3. Do not invent sales, revenue, customers, products, invoices, or amounts.
+
+3. Do not invent sales, revenue, customers, products, invoices, names,
+   phone numbers, email addresses, addresses, amounts, or payment details.
+
 4. If the requested information is not present in the context, clearly say
    that the available business data is insufficient to answer precisely.
+
 5. For questions about "today", use the provided today_sales and
    today_invoice_count values.
-6. For monthly revenue questions, use month_revenue and month_invoice_count.
+
+6. For monthly revenue questions, use month_revenue and
+   month_invoice_count.
+
 7. For low-stock questions, use the provided low_stock_products list.
-8. For customer questions, use top_customers and outstanding_customer_amount
-   where appropriate.
-9. Keep answers concise, practical, and business-friendly.
-10. Currency amounts are in Indian Rupees (INR) unless the user specifies
+
+8. For general customer questions, use customer_details.
+
+9. customer_details contains the COMPLETE AVAILABLE CUSTOMER RECORDS
+   from the authenticated user's business database.
+
+10. When the user asks for "all customer details", "customer details",
+    "show customers", or similar requests, use customer_details and
+    present the available fields clearly.
+
+11. When the user asks about a specific customer by name, search
+    customer_details for the matching customer and show that customer's
+    available information.
+
+12. Do not limit customer answers to top_customers when the user asks for
+    complete customer information.
+
+13. If multiple customers have similar names, clearly distinguish them
+    using the available information.
+
+14. Keep answers concise, practical, readable, and business-friendly.
+
+15. Currency amounts are in Indian Rupees (INR) unless the user specifies
     otherwise.
-11. Return answers as clean plain text for the existing chat UI.
-12. Do not use Markdown formatting such as **bold**, __emphasis__, # headings,
-    Markdown tables, fenced code blocks, or Markdown bullet markers.
-    Use normal sentences and simple line breaks.
-13. Never reveal internal implementation details, authentication data,
+
+16. Never reveal internal implementation details, authentication data,
     database identifiers, secrets, API keys, tokens, or credentials.
+
+17. Never reveal the MongoDB _id field even if it exists internally.
+
+18. Never expose the authenticated user's owner_email or internal
+    implementation information.
+
+19. Format customer information clearly. For example:
+
+    Customer Details
+
+    Name: ...
+    Phone: ...
+    Email: ...
+    Address: ...
+    Total Purchase: ₹...
+    Outstanding: ₹...
+    Payment Status: ...
+
+    Only show fields that actually exist in the supplied customer record.
+
+20. Never invent a missing customer field. If a field is not available,
+    simply do not display it.
 
 BUSINESS CONTEXT:
 """
@@ -291,5 +390,5 @@ USER QUESTION:
     )
 
     return {
-        "response": _clean_ai_response(response.text),
+        "response": response.text,
     }
