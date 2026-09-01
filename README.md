@@ -10,9 +10,9 @@ The platform combines traditional business management tools with **AI-powered in
 
 | Resource                 | Link                                                                                |
 | ------------------------ | ----------------------------------------------------------------------------------- |
-| 🚀 **Live Demo**         |  vyaaparai-zsc7.onrender.com                                                   |
+| 🚀 **Live Demo**         |  https://vyaaparai-zsc7.onrender.com                                                   |
 | 💻 **GitHub Repository** | https://github.com/Soumyadeep2006/VyaaparAI                                            |
-| ⚙️ **Backend API**       | https://vyaparai-backend-vdko.onrender.com                                          |
+| ⚙️ **Backend API**       | https://vyaaparai-backend-yuo4.onrender.com                                          |
 | 🎥 **Demo Video**        | https://drive.google.com/file/d/1rnQ-TNym-MmbRZ4lcdKOsKRrWaX_RRQ4/view?usp=drivesdk |
 
 
@@ -615,7 +615,7 @@ Built as a hackathon project with a focus on:
 Consider giving the repository a ⭐ on GitHub.
 
 **Live Demo:**
-https://vyapar-ai-ruby.vercel.app
+https://vyaaparai-zsc7.onrender.com
 
 **Source Code:**
 https://github.com/Soumyadeep2006/VyaaparAI
